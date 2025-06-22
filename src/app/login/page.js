@@ -12,7 +12,7 @@ export default function Login() {
                         <Link href="/" className="inline-block mb-2">
                             <span className="text-[2rem] font-extrabold" style={{color:'#1E88E5'}}>MaterniBénin</span>
                         </Link>
-                        <h2 className="mt-4 text-2xl md:text-3xl font-extrabold text-gray-900 text-center">Bienvenue dans l'espace professionnel des sage-femmes</h2>
+                        <h2 className="mt-4 text-2xl md:text-3xl font-extrabold text-gray-900 text-center">Bienvenue dans l&apos;espace professionnel des sage-femmes</h2>
                         <p className="mt-2 text-gray-500 text-center">Connectez-vous pour accéder à votre tableau de bord</p>
                     </div>
 

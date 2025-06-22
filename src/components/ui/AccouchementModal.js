@@ -23,8 +23,8 @@ export default function AccouchementModal({ open, onClose, accouchement }) {
           <li><b>Sexe enfant :</b> {accouchement.sexe_enfant}</li>
           <li><b>Date admission :</b> {new Date(accouchement.date_admission).toLocaleDateString('fr-FR')}</li>
           <li><b>Heure admission :</b> {accouchement.heure_admission}</li>
-          <li><b>Date d'accouchement :</b> {new Date(accouchement.date_sortie).toLocaleDateString('fr-FR')}</li>
-          <li><b>Heure d'accouchement :</b> {accouchement.heure_sortie}</li>
+          <li><b>Date d&apos;accouchement :</b> {new Date(accouchement.date_sortie).toLocaleDateString('fr-FR')}</li>
+          <li><b>Heure d&apos;accouchement :</b> {accouchement.heure_sortie}</li>
           <li><b>Mode accouchement :</b> {accouchement.mode_accouchement}</li>
           <li><b>État sortie :</b> {accouchement.etat_sortie}</li>
         </ul>

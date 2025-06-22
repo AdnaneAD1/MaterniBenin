@@ -191,7 +191,7 @@ export default function CPNPage() {
                             onChange={e => setPeriodFilter(e.target.value)}
                         >
                             <option value="">Toutes dates</option>
-                            <option value="today">Aujourd'hui</option>
+                            <option value="today">Aujourd&apos;hui</option>
                             <option value="week">Cette semaine</option>
                             <option value="month">Ce mois</option>
                         </select>

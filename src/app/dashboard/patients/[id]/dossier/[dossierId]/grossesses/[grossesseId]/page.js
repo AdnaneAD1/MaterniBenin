@@ -234,7 +234,7 @@ export default function GrossesseDetailPage() {
                                 )}
                             </div>
                             <div className="flex flex-col gap-2 text-sm text-gray-700">
-                                <div><span className="font-semibold">Nombre d'enfants :</span> {grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')}</div>
+                                <div><span className="font-semibold">Nombre d&apos;enfants :</span> {grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')}</div>
                                 {Array.isArray(grossesse.accouchement.enfants) && grossesse.accouchement.enfants.length > 0 ? (
                                     grossesse.accouchement.enfants.map((enfant, idx) => (
                                         <div key={idx} className="pl-2 border-l-2 border-blue-100 mb-2">
