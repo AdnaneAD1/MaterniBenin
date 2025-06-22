@@ -94,7 +94,7 @@ export default function RapportsPage() {
       </div>
 
       {/* Tableau des rapports */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+      <div className="bg-white rounded-lg shadow overflow-x-auto">
         <DataTable
           columns={[
             { key: 'id', header: 'N°', sortable: true },

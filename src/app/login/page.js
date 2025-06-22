@@ -29,8 +29,8 @@ export default function Login() {
                                     type="email"
                                     autoComplete="email"
                                     required
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-md 
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 
+                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md 
+                           bg-white text-gray-900 placeholder-gray-500 
                            focus:outline-none focus:ring-primary focus:border-primary"
                                     placeholder="Entrez votre email ou identifiant"
                                 />
@@ -49,8 +49,8 @@ export default function Login() {
                                     type="password"
                                     autoComplete="current-password"
                                     required
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-md 
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 
+                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md 
+                           bg-white text-gray-900 placeholder-gray-500 
                            focus:outline-none focus:ring-primary focus:border-primary"
                                     placeholder="Entrez votre mot de passe"
                                 />
@@ -65,7 +65,7 @@ export default function Login() {
                                     type="checkbox"
                                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                                 />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                                     Se souvenir de moi
                                 </label>
                             </div>
