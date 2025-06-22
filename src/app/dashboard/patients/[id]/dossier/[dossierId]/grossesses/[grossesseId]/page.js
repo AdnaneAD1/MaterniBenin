@@ -4,6 +4,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import ConsultationModal from "@/components/ui/ConsultationModal";
 import AccouchementModal from "@/components/ui/AccouchementModal";
+import AddConsultationModal from "@/components/ui/AddConsultationModal";
+import AddAccouchementModal from "@/components/ui/AddAccouchementModal";
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Button from '@/components/ui/Button';
 import Timeline from '@/components/ui/Timeline';
@@ -131,15 +133,22 @@ const mockGrossesses = [
 ];
 
 export default function GrossesseDetailPage() {
-    const [consultationModalOpen, setConsultationModalOpen] = useState(false);
-    const [selectedConsultation, setSelectedConsultation] = useState(null);
-    const [accouchementModalOpen, setAccouchementModalOpen] = useState(false);
     const router = useRouter();
     const params = useParams();
     const { id, dossierId, grossesseId } = params;
 
+    const [consultationModalOpen, setConsultationModalOpen] = useState(false);
+    const [selectedConsultation, setSelectedConsultation] = useState(null);
+    const [accouchementModalOpen, setAccouchementModalOpen] = useState(false);
+    const [addConsultationOpen, setAddConsultationOpen] = useState(false);
+    const [addAccouchementOpen, setAddAccouchementOpen] = useState(false);
+    const [grossesseState, setGrossesseState] = useState(() => {
+        const found = mockGrossesses.find(g => g.id === grossesseId);
+        return found ? { ...found } : null;
+    });
+
     // Recherche de la grossesse dans le mock
-    const grossesse = useMemo(() => mockGrossesses.find(g => g.id === grossesseId), [grossesseId]);
+    const grossesse = grossesseState;
 
     if (!grossesse) {
         return (
@@ -180,11 +189,25 @@ export default function GrossesseDetailPage() {
                                 <Button
                                     className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
                                     icon={<FontAwesomeIcon icon={faPlus} />} 
-                                    onClick={() => alert('Ajouter une consultation (à implémenter)')}
+                                    onClick={() => setAddConsultationOpen(true)}
                                 >
                                     Ajouter consultation
                                 </Button>
                             )}
+                            <AddConsultationModal
+                                open={addConsultationOpen}
+                                onClose={() => setAddConsultationOpen(false)}
+                                onAdd={(newConsultation) => {
+                                    setGrossesseState(g => ({
+                                        ...g,
+                                        consultations: [...g.consultations, {
+                                            ...newConsultation,
+                                            id: Date.now(),
+                                            id_grossesse: grossesseId
+                                        }]
+                                    }));
+                                }}
+                            />
                         </div>
                         <ul className="divide-y divide-gray-100">
                             {grossesse.consultations.map(c => (
@@ -224,14 +247,28 @@ export default function GrossesseDetailPage() {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-base font-bold text-primary">Accouchement</h2>
                                 {!(grossesse.statut?.toLowerCase() === 'terminée') && (
-                                    <Button
-                                        className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                        icon={<FontAwesomeIcon icon={faPlus} />} 
-                                        onClick={() => alert('Ajouter un accouchement (à implémenter)')}
-                                    >
-                                        Ajouter accouchement
-                                    </Button>
-                                )}
+                                        <Button
+                                            className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                            icon={<FontAwesomeIcon icon={faPlus} />} 
+                                            onClick={() => setAddAccouchementOpen(true)}
+                                        >
+                                            Ajouter accouchement
+                                        </Button>
+                                    )}
+                                    <AddAccouchementModal
+                                        open={addAccouchementOpen}
+                                        onClose={() => setAddAccouchementOpen(false)}
+                                        onAdd={(newAccouchement) => {
+                                            setGrossesseState(g => ({
+                                                ...g,
+                                                accouchement: {
+                                                    ...newAccouchement,
+                                                    id: Date.now(),
+                                                    id_dossier_maternite: g.id_dossier
+                                                }
+                                            }));
+                                        }}
+                                    />
                             </div>
                             <div className="flex flex-col gap-2 text-sm text-gray-700">
                                 <div><span className="font-semibold">Nombre d&apos;enfants :</span> {grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')}</div>

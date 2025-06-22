@@ -46,7 +46,7 @@ export default function GenerateRapportModal({ open, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type de rapport</label>
-            <select className="w-full rounded border-gray-300" value={type} onChange={e => setType(e.target.value)} required>
+            <select className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" value={type} onChange={e => setType(e.target.value)} required>
               <option value="CPN">CPN</option>
               <option value="Accouchement">Accouchement</option>
               <option value="Planification">Planification</option>
@@ -54,7 +54,7 @@ export default function GenerateRapportModal({ open, onClose }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Mois</label>
-            <select className="w-full rounded border-gray-300" value={mois} onChange={e => setMois(e.target.value)} required>
+            <select className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" value={mois} onChange={e => setMois(e.target.value)} required>
               <option value="">Sélectionner le mois</option>
               {MOIS_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
@@ -63,7 +63,7 @@ export default function GenerateRapportModal({ open, onClose }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Année</label>
             <input
               type="number"
-              className="w-full rounded border-gray-300"
+              className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2"
               value={annee}
               onChange={e => setAnnee(e.target.value)}
               min="2020"
