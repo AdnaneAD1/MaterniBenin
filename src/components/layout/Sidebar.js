@@ -29,6 +29,7 @@ const Sidebar = ({
         { name: 'Accouchements', href: '/dashboard/accouchements', icon: faBaby },
         { name: 'Planification', href: '/dashboard/planification', icon: faCalendarAlt },
         { name: 'Rapports', href: '/dashboard/rapports', icon: faChartBar },
+        { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: faUsers },
         { name: 'Paramètres', href: '/dashboard/parametres', icon: faCog },
     ];
 
