@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import DatePicker, { registerLocale } from "react-datepicker";
+import fr from "date-fns/locale/fr";
+registerLocale('fr', fr);
 import Button from "@/components/ui/Button";
 
 const METHODE_OPTIONS = ["Implant", "Pilule", "Injectable", "DIU", "Préservatif", "Autre"];
@@ -13,10 +16,31 @@ export default function AddPlanificationModal({ open, onClose, onAdd }) {
     age: '',
     adresse: '',
     telephone: '',
-    methode_choisis: METHODE_OPTIONS[0],
+    methodeChoisis: METHODE_OPTIONS[0],
     sexe: SEXE_OPTIONS[0],
+    diagnostique: '',
+    rdv: '',
   });
   const [error, setError] = useState('');
+  const today = new Date();
+
+  const formatToYYYYMMDD = (d) => {
+    if (!d) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${da}`;
+  };
+
+  const parseYYYYMMDD = (s) => {
+    if (!s) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const handleDateChange = (date) => {
+    setForm(f => ({ ...f, rdv: formatToYYYYMMDD(date) }));
+  };
 
   if (!open) return null;
 
@@ -37,16 +61,15 @@ export default function AddPlanificationModal({ open, onClose, onAdd }) {
     }
     setError('');
     onAdd({
-      id: `PF${Date.now()}`,
       nom: form.nom,
       prenom: form.prenom,
       age: parseInt(form.age),
       adresse: form.adresse,
       telephone: form.telephone,
-      method: form.methode_choisis,
+      methodeChoisis: form.methodeChoisis,
       sexe: form.sexe,
-      date: new Date().toISOString().substring(0, 10),
-      status: "En cours"
+      diagnostique: form.diagnostique,
+      rdv: form.rdv,
     });
     onClose();
     setForm({
@@ -55,8 +78,10 @@ export default function AddPlanificationModal({ open, onClose, onAdd }) {
       age: '',
       adresse: '',
       telephone: '',
-      methode_choisis: METHODE_OPTIONS[0],
+      methodeChoisis: METHODE_OPTIONS[0],
       sexe: SEXE_OPTIONS[0],
+      diagnostique: '',
+      rdv: '',
     });
   };
 
@@ -133,8 +158,8 @@ export default function AddPlanificationModal({ open, onClose, onAdd }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Méthode choisie</label>
             <select
-              name="methode_choisis"
-              value={form.methode_choisis}
+              name="methodeChoisis"
+              value={form.methodeChoisis}
               onChange={handleChange}
               className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
               required
@@ -157,6 +182,30 @@ export default function AddPlanificationModal({ open, onClose, onAdd }) {
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Diagnostique</label>
+            <input
+              type="text"
+              name="diagnostique"
+              value={form.diagnostique}
+              onChange={handleChange}
+              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rendez-vous</label>
+            <DatePicker
+              selected={parseYYYYMMDD(form.rdv)}
+              onChange={handleDateChange}
+              minDate={today}
+              dateFormat="dd/MM/yyyy"
+              locale="fr"
+              placeholderText="Choisir une date"
+              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              required
+            />
           </div>
 
           {error && <div className="text-red-500 text-xs">{error}</div>}

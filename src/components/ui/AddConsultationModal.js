@@ -1,4 +1,9 @@
+"use client";
+
 import React, { useState } from "react";
+import DatePicker, { registerLocale } from "react-datepicker";
+import fr from "date-fns/locale/fr";
+registerLocale('fr', fr);
 import Button from "@/components/ui/Button";
 
 export default function AddConsultationModal({ open, onClose, onAdd }) {
@@ -17,6 +22,25 @@ export default function AddConsultationModal({ open, onClose, onAdd }) {
     RDV: ''
   });
   const [error, setError] = useState('');
+  const today = new Date();
+
+  const formatToYYYYMMDD = (d) => {
+    if (!d) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${da}`;
+  };
+
+  const parseYYYYMMDD = (s) => {
+    if (!s) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const handleDateChange = (name, date) => {
+    setForm(f => ({ ...f, [name]: formatToYYYYMMDD(date) }));
+  };
 
   if (!open) return null;
 
@@ -65,111 +89,61 @@ export default function AddConsultationModal({ open, onClose, onAdd }) {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Section Informations principales */}
           <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-4 border">
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Date consultation *</label>
-              <input type="date" name="date_consultation" value={form.date_consultation} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Numéro CPN *</label>
-              <input type="number" name="numero_cpn" value={form.numero_cpn} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required min="1" />
-            </div>
             <div className="flex items-center gap-3 col-span-2">
               <input type="checkbox" id="dormirsurmild" name="dormirsurmild" checked={form.dormirsurmild} onChange={handleChange} className="accent-blue-600 scale-110" />
-              <label htmlFor="dormirsurmild" className="text-sm">Dort sur MILDA</label>
+              <label htmlFor="dormirsurmild" className="text-sm">Dort sur MILD</label>
             </div>
           </div>
           {/* Section Suivi */}
           <div className="bg-blue-50 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-4 border">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">SP Nbr</label>
-              <input type="text" name="sp_nbr" value={form.sp_nbr} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+              <label className="block text-sm font-semibold mb-1 text-gray-700">Nombre Sulfadoxine Pyrimethamine</label>
+              <input type="text" name="sulfadoxine" value={form.sulfadoxine} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">MEBEN</label>
-              <input type="text" name="meben" value={form.meben} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+              <label className="block text-sm font-semibold mb-1 text-gray-700">Mebendazole</label>
+              <input type="text" name="mebendazole" value={form.mebendazole} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-700">Fer + Foldine</label>
-              <input type="number" name="fer_foldine" value={form.fer_foldine} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" min="0" />
+              <input type="number" name="ferfoldine" value={form.ferfoldine} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" min="0" />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">VAT</label>
+              <label className="block text-sm font-semibold mb-1 text-gray-700">Vaccination Anti Tétanique</label>
               <input type="text" name="vat" value={form.vat} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
             </div>
             <div className="flex items-center gap-3 col-span-2">
-              <input type="checkbox" id="gare_depiste" name="gare_depiste" checked={form.gare_depiste} onChange={handleChange} className="accent-blue-600 scale-110" />
-              <label htmlFor="gare_depiste" className="text-sm">Gare dépisté</label>
+              <input type="checkbox" id="garedepiste" name="garedepiste" checked={form.garedepiste} onChange={handleChange} className="accent-blue-600 scale-110" />
+              <label htmlFor="garedepiste" className="text-sm">Grossesse a risque dépisté</label>
             </div>
             <div className="flex items-center gap-3 col-span-2">
-              <input type="checkbox" id="gare_refere" name="gare_refere" checked={form.gare_refere} onChange={handleChange} className="accent-blue-600 scale-110" />
-              <label htmlFor="gare_refere" className="text-sm">Gare référé</label>
+              <input type="checkbox" id="garerefere" name="garerefere" checked={form.garerefere} onChange={handleChange} className="accent-blue-600 scale-110" />
+              <label htmlFor="garerefere" className="text-sm">Grossesse a risque référé</label>
             </div>
           </div>
           {/* Section Diagnostic */}
           <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-1 gap-4 border">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Diagnostic associé</label>
-              <input type="text" name="diagnostique_associe" value={form.diagnostique_associe} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+              <label className="block text-sm font-semibold mb-1 text-gray-700">Diagnostique</label>
+              <input type="text" name="diagnostique" value={form.diagnostique} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-700">Conduite tenue</label>
-              <input type="text" name="conduite_tenue" value={form.conduite_tenue} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+              <input type="text" name="conduiteTenue" value={form.conduiteTenue} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
             </div>
-          </div>
-          {/* Section RDV */}
-          <div className="bg-blue-50 rounded-lg p-3 grid grid-cols-1 gap-4 border">
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Prochain RDV *</label>
-              <input type="date" name="RDV" value={form.RDV} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Date consultation *</label>
-            <input type="date" name="date_consultation" value={form.date_consultation} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Numéro CPN *</label>
-            <input type="number" name="numero_cpn" value={form.numero_cpn} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required min="1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" name="dormirsurmild" checked={form.dormirsurmild} onChange={handleChange} />
-            <label className="text-sm">Dort sur MILDA</label>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">SP Nbr</label>
-            <input type="text" name="sp_nbr" value={form.sp_nbr} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">MEBEN</label>
-            <input type="text" name="meben" value={form.meben} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Fer + Foldine</label>
-            <input type="number" name="fer_foldine" value={form.fer_foldine} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" min="0" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">VAT</label>
-            <input type="text" name="vat" value={form.vat} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" name="gare_depiste" checked={form.gare_depiste} onChange={handleChange} />
-            <label className="text-sm">Gare dépisté</label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" name="gare_refere" checked={form.gare_refere} onChange={handleChange} />
-            <label className="text-sm">Gare référé</label>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Diagnostic associé</label>
-            <input type="text" name="diagnostique_associe" value={form.diagnostique_associe} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Conduite tenue</label>
-            <input type="text" name="conduite_tenue" value={form.conduite_tenue} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Prochain RDV *</label>
-            <input type="date" name="RDV" value={form.RDV} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
+            <DatePicker
+              selected={parseYYYYMMDD(form.RDV)}
+              onChange={(date) => handleDateChange('RDV', date)}
+              minDate={today}
+              dateFormat="dd/MM/yyyy"
+              locale="fr"
+              placeholderText="Choisir une date"
+              className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2"
+              required
+            />
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <div className="flex justify-end gap-2 mt-4">

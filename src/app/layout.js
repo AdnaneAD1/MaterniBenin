@@ -1,6 +1,7 @@
 import { Roboto } from "next/font/google";
 import { Providers } from './providers';
 import "./globals.css";
+import "react-datepicker/dist/react-datepicker.css";
 
 const roboto = Roboto({
   subsets: ["latin"],
