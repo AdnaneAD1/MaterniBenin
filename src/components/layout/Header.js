@@ -1,67 +1,111 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faBell,
-    faMoon,
-    faSun,
-    faBars,
-    faSearch
-} from '@fortawesome/free-solid-svg-icons';
-import { useTheme } from 'next-themes';
+import { 
+  Search, 
+  Bell, 
+  Settings, 
+  MessageSquare, 
+  User,
+  Menu,
+  Home,
+  ChevronRight
+} from 'lucide-react';
 
 const Header = ({ title, onToggleSidebar }) => {
-    const [notifications, setNotifications] = useState([
-        { id: 1, message: 'Nouvelle patiente ajoutée', time: '10:30' },
-        { id: 2, message: 'CPN à planifier pour Mme Koffi', time: 'Il y a 2h' },
-        { id: 3, message: 'Rapport mensuel disponible', time: 'Il y a 1j' },]);
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: 'Nouvelle patiente ajoutée', time: '10:30' },
+    { id: 2, message: 'CPN à planifier pour Mme Koffi', time: 'Il y a 2h' },
+    { id: 3, message: 'Rapport mensuel disponible', time: 'Il y a 1j' },
+  ]);
 
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [formattedDate, setFormattedDate] = useState('');
-    const { theme, setTheme } = useTheme();
-    const user = {
-        name: 'Kokou',
-    };
-    // Utiliser useEffect pour s'assurer que le formatage de date
-    // se produit uniquement côté client
-    useEffect(() => {
-        const date = new Date();
-        setFormattedDate(date.toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }));
-    }, []);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTimeFilter, setActiveTimeFilter] = useState('Today');
+  const [searchQuery, setSearchQuery] = useState('');
 
-    const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
-    };
-    return (
-        <header className="flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
-            <div className="flex items-center">
-                <button
-                    onClick={onToggleSidebar}
-                    className="lg:hidden mr-4 text-text-secondary hover:text-text-primary"
-                    aria-label="Toggle menu"
-                >
-                    <FontAwesomeIcon icon={faBars} className="w-6 h-6" />
-                </button>
-                <div>
-                    <h1 className="text-xl font-semibold text-text-primary">{title}</h1>
-                    <p className="text-sm text-text-secondary">{formattedDate}</p>
-                </div>
+  const user = {
+    name: 'Lulla Devi',
+    role: 'Dept Admin',
+    initials: 'LD'
+  };
+
+  
+  return (
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+   
+        {/* Center Section - Breadcrumb and Search */}
+        <div className="flex-1 max-w-2xl mx-8">
+ 
+    
+        </div>
+
+        {/* Right Section - Time Filters, Icons and User */}
+        <div className="flex items-center space-x-4">
+          
+ 
+
+          {/* Action Icons */}
+          <div className="flex items-center space-x-2">
+ 
+
+            {/* Settings */}
+            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg relative">
+              <Settings className="w-5 h-5" />
+            </button>
+
+            {/* Messages */}
+            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg relative">
+              <MessageSquare className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></span>
+            </button>
+
+            {/* Notifications */}
+            <button 
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            </button>
+
+            {/* User Profile */}
+            <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                <span className="text-white text-sm font-medium">{user.initials}</span>
+              </div>
+              <div className="hidden lg:block">
+                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                <p className="text-xs text-gray-500">{user.role}</p>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                {/* Image placeholder for user avatar */}
-                <div className="w-full h-full bg-primary flex items-center justify-center text-white text-lg font-medium">
-                    {user.name.charAt(0)}
-                </div>
-            </div>
-        </header>
-    );
+      {/* Notifications Dropdown */}
+      {showNotifications && (
+        <div className="absolute right-6 top-16 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {notifications.map((notification) => (
+              <div key={notification.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
+                <p className="text-sm text-gray-900">{notification.message}</p>
+                <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+              </div>
+            ))}
+          </div>
+          <div className="p-4">
+            <button className="w-full text-center text-sm text-blue-500 hover:text-blue-600 font-medium">
+              Voir toutes les notifications
+            </button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
 };
 
 export default Header;

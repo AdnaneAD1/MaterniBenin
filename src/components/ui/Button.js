@@ -1,79 +1,37 @@
-"use client";
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-import Link from 'next/link';
+const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
+  const variants = {
+    default: "bg-primary text-primary-foreground hover:bg-primary/90",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    ghost: "hover:bg-accent hover:text-accent-foreground",
+    link: "text-primary underline-offset-4 hover:underline",
+  };
 
-const Button = ({
-    children,
-    variant = 'primary',
-    size = 'md',
-    href,
-    onClick,
-    fullWidth = false,
-    disabled = false,
-    className = '',
-    type = 'button',
-    icon = null,
-    iconPosition = 'left'
-}) => {
-    // Base classes
-    let baseClasses = 'inline-flex items-center justify-center rounded-md font-medium focus:outline-none transition-colors';
+  const sizes = {
+    default: "h-10 px-4 py-2",
+    sm: "h-9 rounded-md px-3",
+    lg: "h-11 rounded-md px-8",
+    icon: "h-10 w-10",
+  };
 
-    // Size classes
-    const sizeClasses = {
-        sm: 'px-3 py-1.5 text-xs',
-        md: 'px-4 py-2 text-sm',
-        lg: 'px-5 py-2.5 text-base'
-    };
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  );
+});
 
-    // Variant classes
-    const variantClasses = {
-        primary: 'bg-primary hover:bg-primary-dark text-white shadow-sm focus:ring-2 focus:ring-primary focus:ring-opacity-50',
-        secondary: 'bg-secondary hover:bg-secondary-dark text-white shadow-sm focus:ring-2 focus:ring-secondary focus:ring-opacity-50',
-        outline: 'border border-primary text-primary hover:bg-primary hover:text-white focus:ring-2 focus:ring-primary focus:ring-opacity-50',
-        ghost: 'text-primary hover:bg-gray-100',
-        danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-opacity-50'
-    };
-
-    // Disabled classes
-    const disabledClasses = 'opacity-50 cursor-not-allowed';
-
-    // Width classes
-    const widthClasses = fullWidth ? 'w-full' : '';
-
-    // Combine all classes
-    const buttonClasses = `
-    ${baseClasses} 
-    ${sizeClasses[size]} 
-    ${variantClasses[variant]} 
-    ${disabled ? disabledClasses : ''}
-    ${widthClasses}
-    ${className}
-  `;
-
-    // Render as link if href is provided
-    if (href) {
-        return (
-            <Link href={href} className={buttonClasses}>
-                {icon && iconPosition === 'left' && <span className="mr-2">{icon}</span>}
-                {children}
-                {icon && iconPosition === 'right' && <span className="ml-2">{icon}</span>}
-            </Link>
-        );
-    }
-
-    // Render as button
-    return (
-        <button
-            type={type}
-            className={buttonClasses}
-            onClick={onClick}
-            disabled={disabled}
-        >
-            {icon && iconPosition === 'left' && <span className="mr-2">{icon}</span>}
-            {children}
-            {icon && iconPosition === 'right' && <span className="ml-2">{icon}</span>}
-        </button>
-    );
-};
+Button.displayName = "Button";
 
 export default Button;

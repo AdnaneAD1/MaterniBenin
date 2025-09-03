@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars } from '@fortawesome/free-solid-svg-icons';
+import { Menu } from 'lucide-react';
 
 const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
@@ -16,28 +15,26 @@ const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
     const closeSidebar = () => {
         setSidebarOpen(false);
     };
+
     return (
         <div className="flex h-screen bg-gray-50">
             <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
 
-            <div
-                className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : ''
-                    }`}
-            >
+            <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
                 <Header title={title} onToggleSidebar={toggleSidebar} />
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-6">
+                <main className="flex-1 overflow-y-auto">
                     {children}
                 </main>
 
-                {/* Bouton flottant pour ouvrir la sidebar sur mobile quand elle est fermée */}
+                {/* Bouton flottant pour ouvrir la sidebar sur mobile */}
                 {!sidebarOpen && (
                     <button
                         onClick={toggleSidebar}
-                        className="fixed bottom-6 left-6 z-20 lg:hidden p-3 rounded-full bg-primary text-white shadow-lg hover:bg-primary-dark transition-colors"
+                        className="fixed bottom-6 left-6 z-20 lg:hidden p-3 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-colors"
                         aria-label="Ouvrir le menu"
                     >
-                        <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
+                        <Menu className="w-5 h-5" />
                     </button>
                 )}
             </div>
