@@ -2,12 +2,21 @@
 
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import Button from '@/components/ui/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from "react";
 import { usePatiente } from '@/hooks/patientes';
-
+import { 
+    ArrowLeft, 
+    AlertCircle, 
+    Home, 
+    ChevronRight, 
+    Edit, 
+    Calendar, 
+    Phone, 
+    FileText, 
+    User, 
+    Activity
+  } from 'lucide-react';
+  
 export default function PatientDetailPage() {
     const router = useRouter();
     const params = useParams();
@@ -38,9 +47,11 @@ export default function PatientDetailPage() {
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-gray-600">Chargement de la patiente...</p>
+                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mx-auto mb-6"></div>
+                        <p className="text-gray-700 text-lg font-medium">Chargement de la patiente...</p>
+                    </div>
                 </div>
             </DashboardLayout>
         );
@@ -49,11 +60,25 @@ export default function PatientDetailPage() {
     if (!patient || error) {
         return (
             <DashboardLayout>
-                <div className="p-8 text-center">
-                    <p className="text-lg text-red-600 font-semibold">{error ? (error.message || 'Erreur lors du chargement') : 'Patiente introuvable'}</p>
-                    <Button className="mt-4" onClick={() => router.back()} icon={<FontAwesomeIcon icon={faArrowLeft} />}>
-                        Retour
-                    </Button>
+                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 p-10 max-w-md w-full text-center">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                            {error ? 'Erreur de chargement' : 'Patiente introuvable'}
+                        </h2>
+                        <p className="text-gray-600 mb-8 leading-relaxed">
+                            {error ? (error.message || 'Une erreur est survenue') : 'Cette patiente n\'existe pas dans la base de données.'}
+                        </p>
+                        <button
+                            onClick={() => router.back()}
+                            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Retour
+                        </button>
+                    </div>
                 </div>
             </DashboardLayout>
         );
@@ -61,81 +86,144 @@ export default function PatientDetailPage() {
 
     return (
         <DashboardLayout>
-            <div className="bg-[#F8FAFC] min-h-screen py-6 px-2 sm:px-8">
-                <div className="max-w-5xl mx-auto">
-                    {/* Header + retour */}
-                    <div className="flex items-center mb-4">
-                        <Button variant="outline" onClick={() => router.back()} icon={<FontAwesomeIcon icon={faArrowLeft} />}>
-                            Retour
-                        </Button>
-                        <h1 className="ml-6 text-2xl sm:text-3xl font-bold text-primary">Détail de la patiente</h1>
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-10 px-6 sm:px-12">
+                <div className="max-w-6xl mx-auto space-y-10">
+                    
+                    {/* Header avec breadcrumb et actions */}
+                    <div>
+                        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+                            <Home className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="hover:text-blue-600 cursor-pointer transition-colors">Patients</span>
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="text-blue-600 font-semibold">Profil</span>
+                        </nav>
+                        
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-5">
+                                <button
+                                    onClick={() => router.back()}
+                                    className="group flex items-center justify-center w-12 h-12 bg-white/90 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    <ArrowLeft className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                                </button>
+                                <div>
+                                    <h1 className="text-4xl font-extrabold text-gray-900 mb-1">Profil de la patiente</h1>
+                                    <p className="text-gray-600 font-medium">Consultez et gérez les informations médicales</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                                <button className="flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium shadow-sm">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    Planifier CPN
+                                </button>
+                                <button className="flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold">
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Modifier
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Carte principale info patiente */}
-                    <div className="bg-white rounded-2xl shadow flex flex-col md:flex-row md:items-center md:justify-between p-6 mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-primary border border-gray-200">
-                                {patient.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-xl font-semibold text-gray-900">{patient.name}</span>
+                    <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-8">
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-xl font-bold text-white shadow-md">
+                                    {patient.name.split(' ').map(n => n[0]).join('')}
                                 </div>
-                                <div className="text-sm text-gray-600">ID : {patient.id}</div>
-                                <div className="text-sm text-gray-600">Âge : {patient.age} ans</div>
-                                <div className="text-sm text-gray-600">Téléphone : {patient.phone}</div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">{patient.name}</h2>
+                                    <div className="mt-1 space-y-1 text-gray-600">
+                                        <p className="text-sm">ID : <span className="font-semibold">{patient.id}</span></p>
+                                        <p className="text-sm">Âge : <span className="font-semibold">{patient.age} ans</span></p>
+                                        <div className="flex items-center text-sm">
+                                            <Phone className="w-4 h-4 mr-2 text-blue-500" />
+                                            {patient.phone}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="mt-4 md:mt-0 flex flex-col items-end gap-2">
-                            <div className="flex gap-2">
-                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Dernière CPN : {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('fr-FR') : '—'}</span>
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Prochaine CPN : {patient.nextVisit ? new Date(patient.nextVisit).toLocaleDateString('fr-FR') : '—'}</span>
-                            </div>
-                            <Button
-                                className="mt-4"
-                                variant="primary"
-                                disabled={!patient.dossierId}
-                                onClick={() => patient.dossierId && router.push(`/dashboard/patients/${patient.id}/dossier/${patient.dossierId}`)}
-                            >
-                                Voir dossier maternité
-                            </Button>
-                        </div>
-                    </div>
+                            <div className="flex flex-col items-start lg:items-end gap-4">
+                                <div className="flex flex-col sm:flex-row gap-3">
+{/* Dernière CPN */}
+<div className="flex items-center px-3 py-2 bg-red-50 rounded-lg text-sm text-red-700 border border-red-200">
+  <Calendar className="w-4 h-4 mr-2 text-red-500" />
+  Dernière CPN :{" "}
+  {patient.lastVisit
+    ? new Date(patient.lastVisit).toLocaleDateString("fr-FR")
+    : "—"}
+</div>
 
-                    {/* Onglets (non-fonctionnels, juste pour l’UI) */}
-                    <div className="flex gap-4 border-b border-gray-200 mb-6 overflow-x-auto">
-                        {/* <button className="py-2 px-4 text-primary border-b-2 border-primary font-semibold bg-white">Informations</button>
-                        <button className="py-2 px-4 text-gray-500 hover:text-primary">Consultations</button>
-                        <button className="py-2 px-4 text-gray-500 hover:text-primary">Grossesses</button>
-                        <button className="py-2 px-4 text-gray-500 hover:text-primary">Accouchements</button>
-                        <button className="py-2 px-4 text-gray-500 hover:text-primary">Planification familiale</button>
-                        <button className="py-2 px-4 text-gray-500 hover:text-primary">Documents</button> */}
+{/* Prochaine CPN */}
+<div className="flex items-center px-3 py-2 bg-green-50 rounded-lg text-sm text-green-700 border border-green-200">
+  <Calendar className="w-4 h-4 mr-2 text-green-500" />
+  Prochaine CPN :{" "}
+  {patient.nextVisit
+    ? new Date(patient.nextVisit).toLocaleDateString("fr-FR")
+    : "—"}
+</div>
+
+                                </div>
+                                <button
+                                    disabled={!patient.dossierId}
+                                    onClick={() => patient.dossierId && router.push(`/dashboard/patients/${patient.id}/dossier/${patient.dossierId}`)}
+                                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-sm hover:shadow-md"
+                                >
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    Voir dossier maternité
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* 2 cartes infos principales */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
                         {/* Infos patiente */}
-                        <div className="bg-white rounded-xl shadow p-6">
-                            <h2 className="text-lg font-bold text-primary mb-4">Informations personnelles</h2>
-                            <div className="space-y-2">
-                                <div><span className="font-semibold">Nom :</span> {patient.name}</div>
-                                <div><span className="font-semibold">ID :</span> {patient.id}</div>
-                                <div><span className="font-semibold">Âge :</span> {patient.age} ans</div>
-                                <div><span className="font-semibold">Téléphone :</span> {patient.phone}</div>
+                        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <User className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">Informations personnelles</h3>
+                            </div>
+                            <div className="space-y-4">
+                                <InfoRow label="Nom complet" value={patient.name} />
+                                <InfoRow label="Identifiant" value={patient.id} mono />
+                                <InfoRow label="Âge" value={`${patient.age} ans`} />
+                                <InfoRow label="Téléphone" value={patient.phone} />
                             </div>
                         </div>
+
                         {/* Suivi médical */}
-                        <div className="bg-white rounded-xl shadow p-6">
-                            <h2 className="text-lg font-bold text-primary mb-4">Suivi médical</h2>
-                            <div className="space-y-2">
-                                <div><span className="font-semibold">Dernière CPN :</span> {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('fr-FR') : '—'}</div>
-                                <div><span className="font-semibold">Prochaine CPN :</span> {patient.nextVisit ? new Date(patient.nextVisit).toLocaleDateString('fr-FR') : '—'}</div>
-                                <div><span className="font-semibold">Dossier maternité :</span> <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">À venir</span></div>
+                        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <Activity className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">Suivi médical</h3>
+                            </div>
+                            <div className="space-y-4">
+                                <InfoRow label="Dernière CPN" value={patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('fr-FR') : 'Aucune'} />
+                                <InfoRow label="Prochaine CPN" value={patient.nextVisit ? new Date(patient.nextVisit).toLocaleDateString('fr-FR') : 'À planifier'} />
+                                <InfoRow label="Dossier maternité" value={<span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">En cours</span>} />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+function InfoRow({ label, value, mono }) {
+    return (
+        <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+            <span className="text-sm font-medium text-gray-600">{label}</span>
+            <span className={`text-sm text-gray-900 font-medium ${mono ? 'font-mono bg-gray-50 px-2 py-1 rounded' : ''}`}>
+                {value}
+            </span>
+        </div>
     );
 }

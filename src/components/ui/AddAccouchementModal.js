@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import fr from "date-fns/locale/fr";
 registerLocale('fr', fr);
-import Button from "@/components/ui/Button";
+import { X, Baby, Calendar, Clock, User, Heart } from 'lucide-react';
 
 export default function AddAccouchementModal({ open, onClose, onAdd }) {
   const [form, setForm] = useState({
@@ -99,110 +99,249 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative overflow-auto max-h-[90vh]">
-        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-lg font-bold" onClick={onClose}>&times;</button>
-        <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-blue-50">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6 1a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <h2 className="text-xl font-bold text-blue-900">Ajouter un accouchement</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-rose-50 rounded-t-2xl">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center mr-3">
+              <Baby className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Ajouter un accouchement</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Nom du mari</label>
-              <input type="text" name="nomMari" value={form.nomMari} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          
+          {/* Informations parents */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <User className="w-5 h-5 text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Informations des parents</h3>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Prénom du mari</label>
-              <input type="text" name="prenomMari" value={form.prenomMari} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nom du mari *</label>
+                <input 
+                  type="text" 
+                  name="nomMari" 
+                  value={form.nomMari} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Prénom du mari *</label>
+                <input 
+                  type="text" 
+                  name="prenomMari" 
+                  value={form.prenomMari} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  required
+                />
+              </div>
             </div>
           </div>
+
+          {/* Nombre d'enfants */}
           <div>
-            <label className="block text-sm font-medium mb-1">Nombre d&apos;enfants *</label>
-            <input type="number" name="nbr_enfant" min="1" value={form.nbr_enfant} onChange={handleNbrEnfantChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre d'enfants *</label>
+            <input 
+              type="number" 
+              name="nbr_enfant" 
+              min="1" 
+              value={form.nbr_enfant} 
+              onChange={handleNbrEnfantChange} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              required 
+            />
           </div>
-          <div className="mb-2">
-            <div className="font-semibold mb-2 text-blue-800">Informations sur les enfants</div>
+
+          {/* Informations enfants */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Baby className="w-5 h-5 text-pink-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Informations des enfants</h3>
+            </div>
             {form.enfants.map((enfant, idx) => (
-              <div key={idx} className="p-4 border rounded-lg mb-4 bg-blue-50">
-                <div className="font-semibold mb-2 text-blue-700">Enfant #{idx + 1}</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div key={idx} className="p-4 bg-pink-50 border border-pink-200 rounded-xl">
+                <h4 className="font-semibold text-pink-900 mb-3">Enfant #{idx + 1}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-700">Nom enfant *</label>
-                    <input type="text" name="nomEnfant" value={enfant.nomEnfant} onChange={e => handleEnfantChange(idx, e)} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nom de l'enfant *</label>
+                    <input 
+                      type="text" 
+                      name="nomEnfant" 
+                      value={enfant.nomEnfant} 
+                      onChange={e => handleEnfantChange(idx, e)} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      required 
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-700">Prénom enfant *</label>
-                    <input type="text" name="prenomEnfant" value={enfant.prenomEnfant} onChange={e => handleEnfantChange(idx, e)} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Prénom de l'enfant *</label>
+                    <input 
+                      type="text" 
+                      name="prenomEnfant" 
+                      value={enfant.prenomEnfant} 
+                      onChange={e => handleEnfantChange(idx, e)} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      required 
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-700">Sexe *</label>
-                    <select name="sexe" value={enfant.sexe} onChange={e => handleEnfantChange(idx, e)} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required>
-                      <option value="">-</option>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Sexe *</label>
+                    <select 
+                      name="sexe" 
+                      value={enfant.sexe} 
+                      onChange={e => handleEnfantChange(idx, e)} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Sélectionner</option>
                       <option value="F">Fille</option>
                       <option value="M">Garçon</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-700">Poids (kg) *</label>
-                    <input type="text" name="poids" value={enfant.poids} onChange={e => handleEnfantChange(idx, e)} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Poids (kg) *</label>
+                    <input 
+                      type="text" 
+                      name="poids" 
+                      value={enfant.poids} 
+                      onChange={e => handleEnfantChange(idx, e)} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      placeholder="Ex: 3.2"
+                      required 
+                    />
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+
+          {/* Dates et heures */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Dates et heures</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date d'admission *</label>
+                <DatePicker
+                  selected={form.dateAdmission ? new Date(form.dateAdmission) : null}
+                  onChange={(date) => handleDateChange('dateAdmission', date)}
+                  minDate={today}
+                  dateFormat="dd/MM/yyyy"
+                  locale="fr"
+                  placeholderText="Choisir une date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date d'accouchement *</label>
+                <DatePicker
+                  selected={form.dateAccouchement ? new Date(form.dateAccouchement) : null}
+                  onChange={(date) => handleDateChange('dateAccouchement', date)}
+                  minDate={form.dateAdmission ? new Date(form.dateAdmission) : today}
+                  dateFormat="dd/MM/yyyy"
+                  locale="fr"
+                  placeholderText="Choisir une date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Heure d'admission *</label>
+                <input 
+                  type="time" 
+                  name="heureAdmission" 
+                  value={form.heureAdmission} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Heure d'accouchement *</label>
+                <input 
+                  type="time" 
+                  name="heureAccouchement" 
+                  value={form.heureAccouchement} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  required 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mode d'accouchement et note */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Heart className="w-5 h-5 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Détails médicaux</h3>
+            </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Date admission *</label>
-              <DatePicker
-                selected={form.dateAdmission ? new Date(form.dateAdmission) : null}
-                onChange={(date) => handleDateChange('dateAdmission', date)}
-                minDate={today}
-                dateFormat="dd/MM/yyyy"
-                locale="fr"
-                placeholderText="Choisir une date"
-                className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2"
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mode d'accouchement *</label>
+              <select 
+                name="modeAccouchement" 
+                value={form.modeAccouchement} 
+                onChange={handleChange} 
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                 required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Date accouchement *</label>
-              <DatePicker
-                selected={form.dateAccouchement ? new Date(form.dateAccouchement) : null}
-                onChange={(date) => handleDateChange('dateAccouchement', date)}
-                minDate={form.dateAdmission ? new Date(form.dateAdmission) : today}
-                dateFormat="dd/MM/yyyy"
-                locale="fr"
-                placeholderText="Choisir une date"
-                className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Heure admission *</label>
-              <input type="time" name="heureAdmission" value={form.heureAdmission} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Heure accouchement *</label>
-              <input type="time" name="heureAccouchement" value={form.heureAccouchement} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Mode accouchement *</label>
-              <select name="modeAccouchement" value={form.modeAccouchement} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" required>
-                <option value="">-</option>
+              >
+                <option value="">Sélectionner le mode</option>
                 <option value="Voie basse">Voie basse</option>
                 <option value="Césarienne">Césarienne</option>
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Note générale</label>
+              <textarea 
+                name="note" 
+                value={form.note} 
+                onChange={handleChange} 
+                rows="3"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                placeholder="Observations particulières..."
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Note générale</label>
-            <input type="text" name="note" value={form.note} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-          </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          <div className="flex justify-end gap-2 mt-4">
-            <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
-            <Button type="submit" variant="primary">Ajouter</Button>
+
+          {/* Message d'erreur */}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+
+          {/* Boutons d'action */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors font-medium"
+            >
+              Ajouter l'accouchement
+            </button>
           </div>
         </form>
       </div>

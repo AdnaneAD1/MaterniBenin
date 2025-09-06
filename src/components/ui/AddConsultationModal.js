@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import fr from "date-fns/locale/fr";
 registerLocale('fr', fr);
-import Button from "@/components/ui/Button";
+import { X, Stethoscope, Calendar, Shield, Activity, FileText } from 'lucide-react';
 
 export default function AddConsultationModal({ open, onClose, onAdd }) {
   const [form, setForm] = useState({
@@ -79,76 +79,245 @@ export default function AddConsultationModal({ open, onClose, onAdd }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative max-h-[90vh] overflow-auto">
-        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-lg font-bold" onClick={onClose}>&times;</button>
-        <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-blue-50">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6 1a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <h2 className="text-xl font-bold text-blue-900">Ajouter une consultation</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+              <Stethoscope className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Ajouter une CPN</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Section Informations principales */}
-          <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-4 border">
-            <div className="flex items-center gap-3 col-span-2">
-              <input type="checkbox" id="dormirsurmild" name="dormirsurmild" checked={form.dormirsurmild} onChange={handleChange} className="accent-blue-600 scale-110" />
-              <label htmlFor="dormirsurmild" className="text-sm">Dort sur MILD</label>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          
+          {/* Informations générales */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Informations générales</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date de consultation *</label>
+                <DatePicker
+                  selected={parseYYYYMMDD(form.date_consultation)}
+                  onChange={(date) => handleDateChange('date_consultation', date)}
+                  maxDate={today}
+                  dateFormat="dd/MM/yyyy"
+                  locale="fr"
+                  placeholderText="Choisir une date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Numéro CPN *</label>
+                <input 
+                  type="text" 
+                  name="numero_cpn" 
+                  value={form.numero_cpn} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: CPN1, CPN2..."
+                  required
+                />
+              </div>
+            </div>
+            
+            {/* Checkbox MILD */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-center gap-3">
+                <input 
+                  type="checkbox" 
+                  id="dormirsurmild" 
+                  name="dormirsurmild" 
+                  checked={form.dormirsurmild} 
+                  onChange={handleChange} 
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="dormirsurmild" className="text-sm font-medium text-gray-900">
+                  Dort sur MILD (Moustiquaire Imprégnée d'Insecticide Longue Durée)
+                </label>
+              </div>
             </div>
           </div>
-          {/* Section Suivi */}
-          <div className="bg-blue-50 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-4 border">
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Nombre Sulfadoxine Pyrimethamine</label>
-              <input type="text" name="sulfadoxine" value={form.sulfadoxine} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+
+          {/* Traitements et vaccinations */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-5 h-5 text-green-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Traitements et vaccinations</h3>
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Mebendazole</label>
-              <input type="text" name="mebendazole" value={form.mebendazole} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Fer + Foldine</label>
-              <input type="number" name="ferfoldine" value={form.ferfoldine} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" min="0" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Vaccination Anti Tétanique</label>
-              <input type="text" name="vat" value={form.vat} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
-            </div>
-            <div className="flex items-center gap-3 col-span-2">
-              <input type="checkbox" id="garedepiste" name="garedepiste" checked={form.garedepiste} onChange={handleChange} className="accent-blue-600 scale-110" />
-              <label htmlFor="garedepiste" className="text-sm">Grossesse a risque dépisté</label>
-            </div>
-            <div className="flex items-center gap-3 col-span-2">
-              <input type="checkbox" id="garerefere" name="garerefere" checked={form.garerefere} onChange={handleChange} className="accent-blue-600 scale-110" />
-              <label htmlFor="garerefere" className="text-sm">Grossesse a risque référé</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sulfadoxine Pyrimethamine</label>
+                <input 
+                  type="text" 
+                  name="sp_nbr" 
+                  value={form.sp_nbr} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre de doses"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mebendazole</label>
+                <input 
+                  type="text" 
+                  name="meben" 
+                  value={form.meben} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Dosage"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Fer + Foldine</label>
+                <input 
+                  type="number" 
+                  name="fer_foldine" 
+                  value={form.fer_foldine} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre de comprimés"
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vaccination Anti-Tétanique</label>
+                <input 
+                  type="text" 
+                  name="vat" 
+                  value={form.vat} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="VAT1, VAT2..."
+                />
+              </div>
             </div>
           </div>
-          {/* Section Diagnostic */}
-          <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-1 gap-4 border">
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Diagnostique</label>
-              <input type="text" name="diagnostique" value={form.diagnostique} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+
+          {/* Dépistage des risques */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="w-5 h-5 text-orange-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Dépistage des risques</h3>
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">Conduite tenue</label>
-              <input type="text" name="conduiteTenue" value={form.conduiteTenue} onChange={handleChange} className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2" />
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-3">
+              <div className="flex items-center gap-3">
+                <input 
+                  type="checkbox" 
+                  id="gare_depiste" 
+                  name="gare_depiste" 
+                  checked={form.gare_depiste} 
+                  onChange={handleChange} 
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="gare_depiste" className="text-sm font-medium text-gray-900">
+                  Grossesse à risque dépistée
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="checkbox" 
+                  id="gare_refere" 
+                  name="gare_refere" 
+                  checked={form.gare_refere} 
+                  onChange={handleChange} 
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="gare_refere" className="text-sm font-medium text-gray-900">
+                  Grossesse à risque référée
+                </label>
+              </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Prochain RDV *</label>
-            <DatePicker
-              selected={parseYYYYMMDD(form.RDV)}
-              onChange={(date) => handleDateChange('RDV', date)}
-              minDate={today}
-              dateFormat="dd/MM/yyyy"
-              locale="fr"
-              placeholderText="Choisir une date"
-              className="w-full rounded-lg border border-gray-400 focus:ring-2 focus:ring-primary/30 px-3 py-2"
-              required
-            />
+
+          {/* Diagnostic et conduite */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-5 h-5 text-purple-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Diagnostic et conduite</h3>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnostic associé</label>
+                <textarea 
+                  name="diagnostique_associe" 
+                  value={form.diagnostique_associe} 
+                  onChange={handleChange} 
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Diagnostic médical..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Conduite tenue</label>
+                <textarea 
+                  name="conduite_tenue" 
+                  value={form.conduite_tenue} 
+                  onChange={handleChange} 
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Actions entreprises..."
+                />
+              </div>
+            </div>
           </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          <div className="flex justify-end gap-2 mt-4">
-            <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
-            <Button type="submit" variant="primary">Ajouter</Button>
+
+          {/* Prochain RDV */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Planification</h3>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Prochain rendez-vous *</label>
+              <DatePicker
+                selected={parseYYYYMMDD(form.RDV)}
+                onChange={(date) => handleDateChange('RDV', date)}
+                minDate={today}
+                dateFormat="dd/MM/yyyy"
+                locale="fr"
+                placeholderText="Choisir une date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Message d'erreur */}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+
+          {/* Boutons d'action */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+            >
+              Ajouter la consultation
+            </button>
           </div>
         </form>
       </div>

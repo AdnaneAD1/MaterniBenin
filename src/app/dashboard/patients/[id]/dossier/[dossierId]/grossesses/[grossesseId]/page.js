@@ -9,12 +9,24 @@ import AccouchementModal from "@/components/ui/AccouchementModal";
 import AddConsultationModal from "@/components/ui/AddConsultationModal";
 import AddAccouchementModal from "@/components/ui/AddAccouchementModal";
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import Button from '@/components/ui/Button';
-import Timeline from '@/components/ui/Timeline';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faPlus } from '@fortawesome/free-solid-svg-icons';
-
-// Les données sont désormais chargées via Firestore (useDossier)
+import { 
+    ArrowLeft, 
+    AlertCircle, 
+    Home, 
+    ChevronRight, 
+    Edit, 
+    Calendar, 
+    Clock, 
+    FileText, 
+    User, 
+    Activity,
+    Baby,
+    Stethoscope,
+    Heart,
+    Plus,
+    Eye,
+    Info
+} from 'lucide-react';
 
 export default function GrossesseDetailPage() {
     const router = useRouter();
@@ -70,9 +82,11 @@ export default function GrossesseDetailPage() {
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="p-8 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-gray-600">Chargement de la grossesse...</p>
+                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mx-auto mb-6"></div>
+                        <p className="text-gray-700 text-lg font-medium">Chargement de la grossesse...</p>
+                    </div>
                 </div>
             </DashboardLayout>
         );
@@ -81,9 +95,25 @@ export default function GrossesseDetailPage() {
     if (!grossesse || error) {
         return (
             <DashboardLayout>
-                <div className="p-8 text-center">
-                    <p className="text-lg text-red-600 font-semibold">{error ? (error.message || 'Erreur lors du chargement') : 'Grossesse introuvable'}</p>
-                    <Button className="mt-4" onClick={() => router.back()} icon={<FontAwesomeIcon icon={faArrowLeft} />}>Retour</Button>
+                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200 p-10 max-w-md w-full text-center">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                            {error ? 'Erreur de chargement' : 'Grossesse introuvable'}
+                        </h2>
+                        <p className="text-gray-600 mb-8 leading-relaxed">
+                            {error ? (error.message || 'Une erreur est survenue') : 'Cette grossesse n\'existe pas dans la base de données.'}
+                        </p>
+                        <button
+                            onClick={() => router.back()}
+                            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Retour
+                        </button>
+                    </div>
                 </div>
             </DashboardLayout>
         );
@@ -91,42 +121,125 @@ export default function GrossesseDetailPage() {
 
     return (
         <DashboardLayout>
-            <div className="bg-[#F8FAFC] min-h-screen py-6 px-2 sm:px-8">
-                <div className="max-w-3xl mx-auto">
-                    {/* Header + retour */}
-                    <div className="flex items-center mb-4">
-                        <Button variant="outline" onClick={() => router.back()} icon={<FontAwesomeIcon icon={faArrowLeft} />}>Retour</Button>
-                        <h1 className="ml-6 text-2xl sm:text-3xl font-bold text-primary">Détail de la grossesse</h1>
-                    </div>
-
-                    {/* Informations principales Grossesse */}
-                    <div className="bg-white rounded-2xl shadow p-6 mb-6 flex flex-col gap-4 sm:gap-8 border-l-4 border-blue-200">
-                        <div className="flex flex-wrap gap-6">
-                            <div><span className="font-semibold">ID :</span> {grossesse.id}</div>
-                            <div><span className="font-semibold">ID dossier :</span> {grossesse.id_dossier}</div>
-                            <div><span className="font-semibold">Statut :</span> <span className={`px-2 py-1 rounded-full text-xs font-medium ${grossesse.statut === 'En cours' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{grossesse.statut}</span></div>
-                            <div><span className="font-semibold">Année :</span> {grossesse.annee}</div>
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-10 px-6 sm:px-12">
+                <div className="max-w-6xl mx-auto space-y-10">
+                    
+                    {/* Header avec breadcrumb et actions */}
+                    <div>
+                        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+                            <Home className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="hover:text-blue-600 cursor-pointer transition-colors">Patients</span>
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="hover:text-blue-600 cursor-pointer transition-colors">Dossier</span>
+                            <ChevronRight className="w-4 h-4" />
+                            <span className="text-blue-600 font-semibold">Grossesse</span>
+                        </nav>
+                        
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-5">
+                                <button
+                                    onClick={() => router.back()}
+                                    className="group flex items-center justify-center w-12 h-12 bg-white/90 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    <ArrowLeft className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                                </button>
+                                <div>
+                                    <h1 className="text-4xl font-extrabold text-gray-900 mb-1">Détail de la grossesse</h1>
+                                    <p className="text-gray-600 font-medium">Suivi complet et consultations prénatales</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Consultations prénatales liées */}
-                    <div className="bg-white rounded-xl shadow p-6 mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-bold text-primary">Consultations prénatales</h2>
-                            {!(grossesse.statut?.toLowerCase() === 'terminée') && (
-                                <Button
-                                    className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                    icon={<FontAwesomeIcon icon={faPlus} />} 
-                                    onClick={() => setAddConsultationOpen(true)}
-                                >
-                                    Ajouter consultation
-                                </Button>
-                            )}
+                    {/* Carte principale info grossesse */}
+                    <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-8">
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-xl font-bold text-white shadow-md">
+                                    <Baby className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Grossesse #{grossesse.id}</h2>
+                                    <div className="mt-1 space-y-1 text-gray-600">
+                                        <p className="text-sm">Dossier : <span className="font-semibold">{grossesse.id_dossier}</span></p>
+                                        <p className="text-sm">Année : <span className="font-semibold">{grossesse.annee}</span></p>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                                grossesse.statut === 'En cours' 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {grossesse.statut}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contenu principal */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        {/* Consultations prénatales */}
+                        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <Stethoscope className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900">Consultations prénatales</h3>
+                                </div>
+                                {!(grossesse.statut?.toLowerCase() === 'terminée') && (
+                                    <button
+                                        onClick={() => setAddConsultationOpen(true)}
+                                        className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm text-sm"
+                                    >
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Ajouter
+                                    </button>
+                                )}
+                            </div>
+                            
+                            <div className="space-y-3">
+                                {grossesse.consultations?.length > 0 ? (
+                                    grossesse.consultations.map(c => (
+                                        <div
+                                            key={c.id}
+                                            className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedConsultation(c);
+                                                setConsultationModalOpen(true);
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-semibold text-gray-900">Consultation #{c.id}</span>
+                                                <span className="text-xs text-gray-500">
+                                                    {new Date(c.date_consultation).toLocaleDateString('fr-FR')}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <InfoRow label="Sage-femme" value={c.nom_sage_femme} />
+                                                <InfoRow label="Sexe enceinte" value={c.sexe_enceinte} />
+                                                <InfoRow label="Prochain RDV" value={c.RDV} />
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <Calendar className="w-6 h-6 text-gray-400" />
+                                        </div>
+                                        <p className="text-sm text-gray-500">Aucune consultation enregistrée</p>
+                                    </div>
+                                )}
+                            </div>
+
                             <AddConsultationModal
                                 open={addConsultationOpen}
                                 onClose={() => setAddConsultationOpen(false)}
                                 onAdd={async (form) => {
-                                    // Mapper les noms de champs pour correspondre à addCpn
                                     const payload = {
                                         dormirsurmild: !!form.dormirsurmild,
                                         sulphadoxine: form.sulfadoxine ?? form.sp_nbr ?? '',
@@ -148,56 +261,97 @@ export default function GrossesseDetailPage() {
                                     }
                                 }}
                             />
+
+                            <ConsultationModal
+                                open={consultationModalOpen}
+                                onClose={() => setConsultationModalOpen(false)}
+                                consultation={selectedConsultation}
+                            />
                         </div>
-                        <ul className="divide-y divide-gray-100">
-                            {grossesse.consultations.map(c => (
-                                <li
-                                    key={c.id}
-                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 cursor-pointer hover:bg-blue-50 rounded"
-                                    onClick={() => {
-                                        setSelectedConsultation(c);
-                                        setConsultationModalOpen(true);
-                                    }}
-                                >
-                                    <div className="flex flex-wrap gap-4 mb-1 sm:mb-0">
-                                        <span className="text-xs text-gray-700"><b>ID : {c.id}</b></span>
-                                        <span className="text-xs text-gray-700">Date : {new Date(c.date_consultation).toLocaleDateString('fr-FR')}</span>
-                                        <span className="text-xs text-gray-700">Sage-femme : {c.nom_sage_femme}</span>
+
+                        {/* Accouchement */}
+                        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <Heart className="w-5 h-5 text-blue-600" />
                                     </div>
-                                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                                        <div>Sexe enceinte : <span className="font-semibold text-gray-700">{c.sexe_enceinte}</span></div>
-                                        <div>Prochain RDV : <span className="font-semibold text-gray-700">{c.RDV}</span></div>
+                                    <h3 className="text-lg font-semibold text-gray-900">Accouchement</h3>
+                                </div>
+                                {!(grossesse.statut?.toLowerCase() === 'terminée') && !grossesse.accouchement && (
+                                    <button
+                                        onClick={() => setAddAccouchementOpen(true)}
+                                        className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm text-sm"
+                                    >
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Ajouter
+                                    </button>
+                                )}
+                            </div>
+
+                            {grossesse.accouchement ? (
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                        <div className="space-y-3">
+                                            <InfoRow label="Nombre d'enfants" value={grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')} />
+                                            <InfoRow label="Mode accouchement" value={grossesse.accouchement.mode_accouchement ?? '-'} />
+                                            <InfoRow label="Date admission" value={grossesse.accouchement.date_admission ? new Date(grossesse.accouchement.date_admission).toLocaleDateString('fr-FR') : '-'} />
+                                            <InfoRow label="Heure admission" value={grossesse.accouchement.heure_admission ?? '-'} />
+                                            <InfoRow label="Date accouchement" value={grossesse.accouchement.date_accouchement ? new Date(grossesse.accouchement.date_accouchement).toLocaleDateString('fr-FR') : '-'} />
+                                            <InfoRow label="Heure accouchement" value={grossesse.accouchement.heure_accouchement ?? '-'} />
+                                        </div>
                                     </div>
-                                </li>
-                            ))}
-                        </ul>
-                        <ConsultationModal
-                            open={consultationModalOpen}
-                            onClose={() => setConsultationModalOpen(false)}
-                            consultation={selectedConsultation}
-                        />
-                    </div>
 
+                                    {/* Enfants */}
+                                    {Array.isArray(grossesse.accouchement.enfants) && grossesse.accouchement.enfants.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <h4 className="font-semibold text-gray-900">Enfants :</h4>
+                                            {grossesse.accouchement.enfants.map((enfant, idx) => (
+                                                <div key={idx} className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                                    <h5 className="font-semibold text-blue-900 mb-2">Bébé {idx + 1}</h5>
+                                                    <div className="space-y-2">
+                                                        <InfoRow label="Nom" value={enfant.nom_accouche ?? '-'} />
+                                                        <InfoRow label="Prénom" value={enfant.prenom_accouche ?? '-'} />
+                                                        <InfoRow label="Sexe" value={enfant.sexe_accouche ?? '-'} />
+                                                        <InfoRow label="Poids" value={enfant.poids ?? '-'} />
+                                                        {enfant.note && <InfoRow label="Note" value={enfant.note} />}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                            <div className="space-y-2">
+                                                <InfoRow label="Nom accouche" value={grossesse.accouchement.nom_accouche ?? '-'} />
+                                                <InfoRow label="Prénom accouche" value={grossesse.accouchement.prenom_accouche ?? '-'} />
+                                                <InfoRow label="Sexe" value={grossesse.accouchement.sexe_accouche ?? '-'} />
+                                                <InfoRow label="Poids" value={grossesse.accouchement.poids ?? '-'} />
+                                                {grossesse.accouchement.note && <InfoRow label="Note" value={grossesse.accouchement.note} />}
+                                            </div>
+                                        </div>
+                                    )}
 
-
-                    {/* Accouchement lié à la grossesse */}
-                    <div className="bg-white rounded-xl shadow p-6 mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-bold text-primary">Accouchement</h2>
-                            {!(grossesse.statut?.toLowerCase() === 'terminée') && (
-                                <Button
-                                    className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                    icon={<FontAwesomeIcon icon={faPlus} />} 
-                                    onClick={() => setAddAccouchementOpen(true)}
-                                >
-                                    Ajouter accouchement
-                                </Button>
+                                    <button
+                                        onClick={() => setAccouchementModalOpen(true)}
+                                        className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                                    >
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        Voir détails complets
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <Baby className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                    <p className="text-sm text-gray-500">Aucun accouchement enregistré</p>
+                                </div>
                             )}
+
                             <AddAccouchementModal
                                 open={addAccouchementOpen}
                                 onClose={() => setAddAccouchementOpen(false)}
                                 onAdd={async (form) => {
-                                    // addChildbirth attend enfants: [{nomEnfant, prenomEnfant, sexe, poids}], et autres champs
                                     const payload = {
                                         nomMari: form.nomMari,
                                         prenomMari: form.prenomMari,
@@ -223,64 +377,42 @@ export default function GrossesseDetailPage() {
                                     }
                                 }}
                             />
+
+                            <AccouchementModal
+                                open={accouchementModalOpen}
+                                onClose={() => setAccouchementModalOpen(false)}
+                                accouchement={grossesse.accouchement}
+                            />
                         </div>
-                        {grossesse.accouchement ? (
-                            <>
-                                <div className="flex flex-col gap-2 text-sm text-gray-700">
-                                    <div><span className="font-semibold">Nombre d&apos;enfants :</span> {grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')}</div>
-                                    {Array.isArray(grossesse.accouchement.enfants) && grossesse.accouchement.enfants.length > 0 ? (
-                                        grossesse.accouchement.enfants.map((enfant, idx) => (
-                                            <div key={idx} className="pl-2 border-l-2 border-blue-100 mb-2">
-                                                <div><span className="font-semibold">Bébé {idx + 1}</span></div>
-                                                <div><span className="font-semibold">Nom accouche :</span> {enfant.nom_accouche ?? '-'}</div>
-                                                <div><span className="font-semibold">Prénom accouche :</span> {enfant.prenom_accouche ?? '-'}</div>
-                                                <div><span className="font-semibold">Nom mari :</span> {enfant.nom_mari ?? '-'}</div>
-                                                <div><span className="font-semibold">Prénom mari :</span> {enfant.prenom_mari ?? '-'}</div>
-                                                <div><span className="font-semibold">Sexe :</span> {enfant.sexe_accouche ?? '-'}</div>
-                                                <div><span className="font-semibold">Poids :</span> {enfant.poids ?? '-'}</div>
-                                                <div><span className="font-semibold">Note :</span> {enfant.note ?? '-'}</div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <div><span className="font-semibold">Nom accouche :</span> {grossesse.accouchement.nom_accouche ?? '-'}</div>
-                                            <div><span className="font-semibold">Prénom accouche :</span> {grossesse.accouchement.prenom_accouche ?? '-'}</div>
-                                            <div><span className="font-semibold">Nom mari :</span> {grossesse.accouchement.nom_mari ?? '-'}</div>
-                                            <div><span className="font-semibold">Prénom mari :</span> {grossesse.accouchement.prenom_mari ?? '-'}</div>
-                                            <div><span className="font-semibold">Sexe :</span> {grossesse.accouchement.sexe_accouche ?? '-'}</div>
-                                            <div><span className="font-semibold">Poids :</span> {grossesse.accouchement.poids ?? '-'}</div>
-                                            <div><span className="font-semibold">Note :</span> {grossesse.accouchement.note ?? '-'}</div>
-                                        </>
-                                    )}
-                                    <div><span className="font-semibold">Heure admission :</span> {grossesse.accouchement.heure_admission ?? '-'}</div>
-                                    <div><span className="font-semibold">Date admission :</span> {grossesse.accouchement.date_admission ? new Date(grossesse.accouchement.date_admission).toLocaleDateString('fr-FR') : '-'}</div>
-                                    <div><span className="font-semibold">Heure accouchement :</span> {grossesse.accouchement.heure_accouchement ?? '-'}</div>
-                                    <div><span className="font-semibold">Date accouchement :</span> {grossesse.accouchement.date_accouchement ? new Date(grossesse.accouchement.date_accouchement).toLocaleDateString('fr-FR') : '-'}</div>
-                                    <div><span className="font-semibold">Mode accouchement :</span> {grossesse.accouchement.mode_accouchement ?? '-'}</div>
-                                </div>
-                                <AccouchementModal
-                                    open={accouchementModalOpen}
-                                    onClose={() => setAccouchementModalOpen(false)}
-                                    accouchement={grossesse.accouchement}
-                                />
-                            </>
-                        ) : (
-                            <div className="text-xs text-gray-500">Aucun accouchement enregistré</div>
-                        )}
                     </div>
 
-                    {/* Bloc Observations générales */}
+                    {/* Observations générales */}
                     {grossesse.observations && grossesse.observations !== '' && (
-                        <div className="bg-yellow-50 border-l-4 border-yellow-300 rounded-xl shadow p-5 mb-6">
-                            <h3 className="text-base font-bold text-yellow-800 mb-2 flex items-center gap-2">
-                                <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20.5c4.142 0 7.5-3.358 7.5-7.5s-3.358-7.5-7.5-7.5-7.5 3.358-7.5 7.5 3.358 7.5 7.5 7.5z" /></svg>
-                                Observations générales
-                            </h3>
-                            <div className="text-sm text-gray-800">{grossesse.observations}</div>
+                        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-md border border-gray-200 p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                    <Info className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">Observations générales</h3>
+                            </div>
+                            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                                <p className="text-sm text-gray-800">{grossesse.observations}</p>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+function InfoRow({ label, value, mono }) {
+    return (
+        <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">{label}</span>
+            <span className={`text-xs text-gray-900 font-medium ${mono ? 'font-mono bg-gray-100 px-2 py-1 rounded' : ''}`}>
+                {value}
+            </span>
+        </div>
     );
 }
