@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import fr from "date-fns/locale/fr";
 registerLocale('fr', fr);
-import Button from "@/components/ui/Button";
+import { X, Shield, User, Phone, MapPin, Calendar, FileText, Heart } from 'lucide-react';
 
 const METHODE_OPTIONS = ["Implant", "Pilule", "Injectable", "DIU", "Préservatif", "Autre"];
 const SEXE_OPTIONS = ["Féminin", "Masculin"];
@@ -44,7 +44,6 @@ export default function AddPlanificationModal({ open, onClose, onAdd, onUpdate, 
   const handleDateChange = (date) => {
     setForm(f => ({ ...f, rdv: formatToYYYYMMDD(date) }));
   };
-
 
   // Initialize form when opening in edit mode with initialData
   useEffect(() => {
@@ -149,144 +148,211 @@ export default function AddPlanificationModal({ open, onClose, onAdd, onUpdate, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
-        <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-lg font-bold"
-          onClick={onClose}
-          aria-label="Fermer"
-        >
-          ×
-        </button>
-        <h2 className="text-xl font-bold text-primary mb-4">{mode === 'edit' ? 'Modifier la planification' : 'Ajouter une planification familiale'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-            <input
-              type="text"
-              name="nom"
-              value={form.nom}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-2xl">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {mode === 'edit' ? 'Modifier la planification familiale' : 'Ajouter une planification familiale'}
+            </h2>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-            <input
-              type="text"
-              name="prenom"
-              value={form.prenom}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Âge</label>
-            <input
-              type="number"
-              name="age"
-              value={form.age}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-              min="10"
-              max="60"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-            <input
-              type="text"
-              name="adresse"
-              value={form.adresse}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-            <input
-              type="tel"
-              name="telephone"
-              value={form.telephone}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-              pattern="[0-9]{8,15}"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Méthode choisie</label>
-            <select
-              name="methodeChoisis"
-              value={form.methodeChoisis}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            >
-              {METHODE_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
-            <select
-              name="sexe"
-              value={form.sexe}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            >
-              {SEXE_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Diagnostique</label>
-            <input
-              type="text"
-              name="diagnostique"
-              value={form.diagnostique}
-              onChange={handleChange}
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rendez-vous</label>
-            <DatePicker
-              selected={parseYYYYMMDD(form.rdv)}
-              onChange={handleDateChange}
-              minDate={today}
-              dateFormat="dd/MM/yyyy"
-              locale="fr"
-              placeholderText="Choisir une date"
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              required
-            />
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          
+          {/* Informations personnelles */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <User className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Informations personnelles</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
+                <input
+                  type="text"
+                  name="nom"
+                  value={form.nom}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Prénom *</label>
+                <input
+                  type="text"
+                  name="prenom"
+                  value={form.prenom}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Âge *</label>
+                <input
+                  type="number"
+                  name="age"
+                  value={form.age}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                  min="10"
+                  max="60"
+                  placeholder="Ex: 25"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sexe *</label>
+                <select
+                  name="sexe"
+                  value={form.sexe}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                >
+                  {SEXE_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
-          {error && <div className="text-red-500 text-xs">{error}</div>}
-          <div className="flex justify-end gap-2 mt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Annuler</Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting} aria-busy={isSubmitting}>
+          {/* Coordonnées */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Phone className="w-5 h-5 text-green-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Coordonnées</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone *</label>
+                <input
+                  type="tel"
+                  name="telephone"
+                  value={form.telephone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                  pattern="[0-9]{8,15}"
+                  placeholder="Ex: 97123456"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
+                <input
+                  type="text"
+                  name="adresse"
+                  value={form.adresse}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                  placeholder="Ex: Cotonou, Zogbo"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Méthode contraceptive */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Heart className="w-5 h-5 text-pink-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Méthode contraceptive</h3>
+            </div>
+            <div className="p-4 bg-pink-50 border border-pink-200 rounded-xl">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Méthode choisie *</label>
+              <select
+                name="methodeChoisis"
+                value={form.methodeChoisis}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+              >
+                {METHODE_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Diagnostic et suivi */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Diagnostic et suivi</h3>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Diagnostic *</label>
+                <textarea
+                  name="diagnostique"
+                  value={form.diagnostique}
+                  onChange={handleChange}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  required
+                  placeholder="Diagnostic médical et observations..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Prochain rendez-vous</label>
+                <DatePicker
+                  selected={parseYYYYMMDD(form.rdv)}
+                  onChange={handleDateChange}
+                  minDate={today}
+                  dateFormat="dd/MM/yyyy"
+                  locale="fr"
+                  placeholderText="Choisir une date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Message d'erreur */}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+
+          {/* Boutons d'action */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
+            >
               {isSubmitting ? (
-                <span className="inline-flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                   {mode === 'edit' ? 'Mise à jour...' : 'Ajout...'}
-                </span>
+                </>
               ) : (
-                mode === 'edit' ? 'Mettre à jour' : 'Ajouter'
+                mode === 'edit' ? 'Mettre à jour' : 'Ajouter la planification'
               )}
-            </Button>
+            </button>
           </div>
         </form>
       </div>
