@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import DatePicker, { registerLocale } from "react-datepicker";
 import fr from "date-fns/locale/fr";
 registerLocale('fr', fr);
@@ -45,6 +45,16 @@ export default function AddPlanificationModal({ open, onClose, onAdd, onUpdate, 
     setForm(f => ({ ...f, rdv: formatToYYYYMMDD(date) }));
   };
 
+  const normalizeToDate = useCallback((d) => {
+    if (!d) return null;
+    if (d.toDate) return d.toDate();
+    if (typeof d === 'string') {
+      const parsed = parseYYYYMMDD(d);
+      return parsed || new Date(d);
+    }
+    return new Date(d);
+  }, []);
+
   // Initialize form when opening in edit mode with initialData
   useEffect(() => {
     if (open && initialData) {
@@ -75,16 +85,6 @@ export default function AddPlanificationModal({ open, onClose, onAdd, onUpdate, 
   }, [open, initialData, mode]);
 
   if (!open) return null;
-
-  const normalizeToDate = (d) => {
-    if (!d) return null;
-    if (d.toDate) return d.toDate();
-    if (typeof d === 'string') {
-      const parsed = parseYYYYMMDD(d);
-      return parsed || new Date(d);
-    }
-    return new Date(d);
-  };
 
   const handleChange = e => {
     const { name, value } = e.target;

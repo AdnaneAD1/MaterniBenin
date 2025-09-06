@@ -260,7 +260,7 @@ export default function AddPregnantWomanModal({ open, onClose, onAdd, editData =
                         <div>
                             <p className="text-sm font-medium text-blue-800 mb-1">Information importante</p>
                             <p className="text-xs text-blue-600">
-                                Tous les champs marqués d'un astérisque (*) sont obligatoires. 
+                                Tous les champs marqués d&apos;un astérisque (*) sont obligatoires. 
                                 Les informations seront utilisées pour le suivi médical de la patiente.
                             </p>
                         </div>

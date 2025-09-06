@@ -154,7 +154,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
 
           {/* Nombre d'enfants */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre d'enfants *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre d&apos;enfants *</label>
             <input 
               type="number" 
               name="nbr_enfant" 
@@ -177,7 +177,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
                 <h4 className="font-semibold text-pink-900 mb-3">Enfant #{idx + 1}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nom de l'enfant *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nom de l&apos;enfant *</label>
                     <input 
                       type="text" 
                       name="nomEnfant" 
@@ -188,7 +188,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Prénom de l'enfant *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Prénom de l&apos;enfant *</label>
                     <input 
                       type="text" 
                       name="prenomEnfant" 
@@ -237,7 +237,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date d'admission *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date d&apos;admission *</label>
                 <DatePicker
                   selected={form.dateAdmission ? new Date(form.dateAdmission) : null}
                   onChange={(date) => handleDateChange('dateAdmission', date)}
@@ -250,7 +250,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date d'accouchement *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date d&apos;accouchement *</label>
                 <DatePicker
                   selected={form.dateAccouchement ? new Date(form.dateAccouchement) : null}
                   onChange={(date) => handleDateChange('dateAccouchement', date)}
@@ -263,7 +263,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Heure d'admission *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Heure d&apos;admission *</label>
                 <input 
                   type="time" 
                   name="heureAdmission" 
@@ -274,7 +274,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Heure d'accouchement *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Heure d&apos;accouchement *</label>
                 <input 
                   type="time" 
                   name="heureAccouchement" 
@@ -294,7 +294,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
               <h3 className="text-lg font-semibold text-gray-900">Détails médicaux</h3>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mode d'accouchement *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mode d&apos;accouchement *</label>
               <select 
                 name="modeAccouchement" 
                 value={form.modeAccouchement} 
@@ -340,7 +340,7 @@ export default function AddAccouchementModal({ open, onClose, onAdd }) {
               type="submit"
               className="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors font-medium"
             >
-              Ajouter l'accouchement
+              Ajouter l&apos;accouchement
             </button>
           </div>
         </form>

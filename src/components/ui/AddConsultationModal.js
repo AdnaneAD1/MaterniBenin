@@ -146,7 +146,7 @@ export default function AddConsultationModal({ open, onClose, onAdd }) {
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="dormirsurmild" className="text-sm font-medium text-gray-900">
-                  Dort sur MILD (Moustiquaire Imprégnée d'Insecticide Longue Durée)
+                  Dort sur MILD (Moustiquaire Imprégnée d&apos;Insecticide Longue Durée)
                 </label>
               </div>
             </div>
