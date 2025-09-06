@@ -19,7 +19,11 @@ import {
   MoreVertical,
   Plus,
   Users,
-  Activity
+  Activity,
+  X,
+  User,
+  Hash,
+  Clock,
 } from 'lucide-react';
 
 export default function PatientsPage() {
@@ -98,7 +102,7 @@ export default function PatientsPage() {
     };
     
     // Use fallback data if no patients loaded
-    const displayPatients = patients.length > 0 ? patients : [];
+    const displayPatients = patients;
 
     const filters = ['Toutes', 'Normal', 'À surveiller', 'À risque', 'Post-partum'];
 
@@ -478,7 +482,7 @@ export default function PatientsPage() {
                 )}
 
                 {/* Empty State */}
-                {filteredPatients.length === 0 && !loading && (
+                {filteredPatients.length === 0 && !loading && !isLoading && (
                     <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Baby className="w-8 h-8 text-gray-400" />
@@ -498,7 +502,7 @@ export default function PatientsPage() {
                 )}
 
                 {/* Loading State */}
-                {loading && (
+                {(loading || isLoading) && (
                     <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                         <p className="text-gray-600">Chargement des patientes...</p>
