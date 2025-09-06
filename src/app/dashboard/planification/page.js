@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { usePlanification } from '@/hooks/planification';
+import AddPlanificationModal from '@/components/AddPlanificationModal';
+
 import { 
   Search, 
   Filter, 
@@ -28,101 +31,86 @@ export default function PlanificationPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Sample data for planification familiale
-    const [planificationData, setPlanificationData] = useState([
-        {
-            id: 'PF001',
-            patientName: 'Awa YACOUBOU',
-            patientId: 'PT001',
-            age: 27,
-            method: 'Implant',
-            date: '2025-06-15',
-            time: '09:30',
-            status: 'En cours',
-            nextVisit: '2025-09-15',
-            avatar: 'AY',
-            color: 'bg-purple-100 text-purple-600',
-            doctor: 'Sage-femme Lulla Devi',
-            notes: 'Pose d\'implant contraceptif'
-        },
-        {
-            id: 'PF002',
-            patientName: 'Bénédicte KOFFI',
-            patientId: 'PT002',
-            age: 32,
-            method: 'Pilule',
-            date: '2025-06-10',
-            time: '14:15',
-            status: 'Terminé',
-            nextVisit: '2025-09-10',
-            avatar: 'BK',
-            color: 'bg-pink-100 text-pink-600',
-            doctor: 'Sage-femme Lulla Devi',
-            notes: 'Prescription pilule contraceptive'
-        },
-        {
-            id: 'PF003',
-            patientName: 'Célestine ADJOVI',
-            patientId: 'PT003',
-            age: 24,
-            method: 'Injectable',
-            date: '2025-06-01',
-            time: '11:00',
-            status: 'Terminé',
-            nextVisit: '2025-09-01',
-            avatar: 'CA',
-            color: 'bg-rose-100 text-rose-600',
-            doctor: 'Sage-femme Lulla Devi',
-            notes: 'Injection contraceptive trimestrielle'
-        },
-        {
-            id: 'PF004',
-            patientName: 'Diane SOGLO',
-            patientId: 'PT004',
-            age: 29,
-            method: 'DIU',
-            date: '2025-06-20',
-            time: '10:30',
-            status: 'Planifié',
-            nextVisit: '2025-07-20',
-            avatar: 'DS',
-            color: 'bg-indigo-100 text-indigo-600',
-            doctor: 'Sage-femme Lulla Devi',
-            notes: 'Pose de dispositif intra-utérin'
-        },
-        {
-            id: 'PF005',
-            patientName: 'Estelle HOUNGBO',
-            patientId: 'PT005',
-            age: 26,
-            method: 'Préservatif',
-            date: '2025-06-18',
-            time: '15:45',
-            status: 'En cours',
-            nextVisit: '2025-12-18',
-            avatar: 'EH',
-            color: 'bg-teal-100 text-teal-600',
-            doctor: 'Sage-femme Lulla Devi',
-            notes: 'Conseil et distribution préservatifs'
-        },
-        {
-            id: 'PF006',
-            patientName: 'Fatou IBRAHIM',
-            patientId: 'PT006',
-            age: 35,
-            method: 'Stérilisation',
-            date: '2025-06-25',
-            time: '08:00',
-            status: 'Planifié',
-            nextVisit: '2025-07-25',
-            avatar: 'FI',
-            color: 'bg-orange-100 text-orange-600',
-            doctor: 'Sage-femme Lulla Devi',
-            notes: 'Consultation pré-stérilisation'
-        }
-    ]);
+    const { getPlanificationsWithDetails, getPlanificationStats, addPlanification, updatePlanification, loading } = usePlanification();
+    const [planificationData, setPlanificationData] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [formMode, setFormMode] = useState('add');
+    const [formInitial, setFormInitial] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
 
-    const filters = ['Toutes', 'En cours', 'Terminé', 'Planifié', 'Annulé'];
+    const filters = ['Toutes', 'En cours', 'Terminé', 'Planifié'];
+
+    // Helpers
+    const getRandomColor = () => {
+        const colors = [
+            'bg-blue-100 text-blue-600',
+            'bg-pink-100 text-pink-600',
+            'bg-green-100 text-green-600',
+            'bg-purple-100 text-purple-600',
+            'bg-orange-100 text-orange-600',
+            'bg-indigo-100 text-indigo-600',
+            'bg-teal-100 text-teal-600',
+            'bg-rose-100 text-rose-600'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    };
+
+    const toDate = (v) => {
+        if (!v) return null;
+        if (v.toDate) return v.toDate();
+        if (typeof v === 'string') return new Date(v);
+        return new Date(v);
+    };
+
+    const mapPlanif = (p) => {
+        const fullName = `${p.prenom || ''} ${p.nom || ''}`.trim();
+        const initials = `${(p.prenom || 'P').charAt(0)}${(p.nom || 'N').charAt(0)}`;
+        const next = toDate(p.prochaineVisite);
+        const today = new Date();
+        const status = p.statut == 'Terminée' ? 'Terminé' : 'Planifié';
+        const created = toDate(p.createdAt);
+        return {
+            id: p.planificationId || p.id,
+            patientName: fullName || 'Inconnu',
+            patientId: p.personneId || '-',
+            age: p.age ?? '-',
+            method: p.methodeChoisis || '-',
+            date: created ? created.toISOString().slice(0,10) : null,
+            time: '',
+            status,
+            nextVisit: next ? next.toISOString().slice(0,10) : null,
+            avatar: initials,
+            color: getRandomColor(),
+            notes: p.diagnostique || '',
+            sexe: p.sexe || '-',
+            original: p,
+        };
+    };
+
+    const loadData = async () => {
+        try {
+            setIsLoading(true);
+            const [resList, resStats] = await Promise.all([
+                getPlanificationsWithDetails(),
+                getPlanificationStats()
+            ]);
+            if (resList.success) {
+                setPlanificationData(resList.planifications.map(mapPlanif));
+            }
+            if (resStats.success) {
+                setStats(resStats.stats);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const getStatusBadge = (status) => {
         const statusConfig = {
@@ -193,7 +181,11 @@ export default function PlanificationPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Total Planifications</p>
-                                <p className="text-2xl font-bold text-gray-900">{planificationData.length}</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">{stats?.totalPlanifications ?? planificationData.length}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -204,10 +196,12 @@ export default function PlanificationPage() {
                                 <Activity className="w-6 h-6 text-blue-600" />
                             </div>
                             <div className="ml-4">
-                                <p className="text-sm text-gray-600">En Cours</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {planificationData.filter(p => p.status === 'En cours').length}
-                                </p>
+                                <p className="text-sm text-gray-600">Ce mois</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">{stats?.planificationsThisMonth ?? 0}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -218,10 +212,12 @@ export default function PlanificationPage() {
                                 <CheckCircle className="w-6 h-6 text-green-600" />
                             </div>
                             <div className="ml-4">
-                                <p className="text-sm text-gray-600">Terminées</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {planificationData.filter(p => p.status === 'Terminé').length}
-                                </p>
+                                <p className="text-sm text-gray-600">Consultations ce mois</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">{stats?.consultationsThisMonth ?? 0}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -232,10 +228,12 @@ export default function PlanificationPage() {
                                 <Calendar className="w-6 h-6 text-purple-600" />
                             </div>
                             <div className="ml-4">
-                                <p className="text-sm text-gray-600">Planifiées</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {planificationData.filter(p => p.status === 'Planifié').length}
-                                </p>
+                                <p className="text-sm text-gray-600">Méthode populaire</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
+                                ) : (
+                                    <p className="text-xl font-bold text-gray-900">{stats?.methodePopulaire ?? '—'}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -249,11 +247,9 @@ export default function PlanificationPage() {
                     </div>
                     
                     <div className="flex gap-3">
-                        <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                            <Download className="w-5 h-5 mr-2" />
-                            Exporter
-                        </button>
-                        <button className="flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                        <button
+                            onClick={() => { setFormMode('add'); setFormInitial(null); setShowForm(true); }}
+                            className="flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
                             <Plus className="w-5 h-5 mr-2" />
                             Nouvelle Planification
                         </button>
@@ -348,9 +344,9 @@ export default function PlanificationPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {new Date(pf.date).toLocaleDateString('fr-FR')}
+                                                {pf.date ? new Date(pf.date).toLocaleDateString('fr-FR') : '—'}
                                             </div>
-                                            <div className="text-sm text-gray-500">{pf.time}</div>
+                                            <div className="text-sm text-gray-500">{pf.time || '--:--'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(pf.status)}`}>
@@ -360,19 +356,20 @@ export default function PlanificationPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {new Date(pf.nextVisit).toLocaleDateString('fr-FR')}
+                                                {pf.nextVisit ? new Date(pf.nextVisit).toLocaleDateString('fr-FR') : '—'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
-                                                <button className="text-purple-600 hover:text-purple-900 p-1 rounded-lg hover:bg-purple-50 transition-colors">
+                                                <button
+                                                    onClick={() => setSelectedItem(pf)}
+                                                    className="text-purple-600 hover:text-purple-900 p-1 rounded-lg hover:bg-purple-50 transition-colors">
                                                     <Eye className="w-4 h-4" />
                                                 </button>
-                                                <button className="text-gray-600 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-50 transition-colors">
+                                                <button
+                                                    onClick={() => { setFormMode('edit'); setFormInitial(pf.original); setShowForm(true); }}
+                                                    className="text-gray-600 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-50 transition-colors">
                                                     <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <MoreVertical className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -437,10 +434,64 @@ export default function PlanificationPage() {
                         <p className="text-gray-500 mb-6">
                             {searchTerm ? 'Aucune planification ne correspond à votre recherche.' : 'Commencez par ajouter votre première planification familiale.'}
                         </p>
-                        <button className="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                        <button onClick={() => { setFormMode('add'); setFormInitial(null); setShowForm(true); }} className="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
                             <Plus className="w-5 h-5 mr-2" />
                             Nouvelle Planification
                         </button>
+                    </div>
+                )}
+
+                {/* Add/Edit Planification Modal */}
+                {showForm && (
+                    <AddPlanificationModal
+                        open={showForm}
+                        onClose={() => setShowForm(false)}
+                        onAdd={async (payload) => { await addPlanification(payload); await loadData(); }}
+                        onUpdate={async (payload) => { await updatePlanification(payload); await loadData(); }}
+                        mode={formMode}
+                        initialData={formInitial}
+                    />
+                )}
+
+                {/* Details Modal */}
+                {selectedItem && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+                            <button
+                                className="absolute top-3 right-3 text-gray-500 hover:text-purple-600 text-xl"
+                                onClick={() => setSelectedItem(null)}
+                                aria-label="Fermer"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-bold text-purple-600 mb-6">Détails de la planification</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2">Patiente</h3>
+                                    <div className="flex items-center">
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium ${selectedItem.color}`}>
+                                            {selectedItem.avatar}
+                                        </div>
+                                        <div className="ml-3">
+                                            <div className="font-medium text-gray-900">{selectedItem.patientName}</div>
+                                            <div className="text-sm text-gray-500">ID: {selectedItem.patientId}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-gray-700">Âge: {selectedItem.age}</div>
+                                    <div className="text-sm text-gray-700">Sexe: {selectedItem.sexe}</div>
+                                    <div className="text-sm text-gray-700">Adresse: {selectedItem.original?.adresse || '-'}</div>
+                                    <div className="text-sm text-gray-700">Téléphone: {selectedItem.original?.telephone || '-'}</div>
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2">Informations</h3>
+                                    <div className="flex justify-between"><span className="font-medium text-gray-700">Méthode:</span><span>{selectedItem.method}</span></div>
+                                    <div className="flex justify-between"><span className="font-medium text-gray-700">Statut:</span><span>{selectedItem.status}</span></div>
+                                    <div className="flex justify-between"><span className="font-medium text-gray-700">Diagnostique:</span><span>{selectedItem.notes || '-'}</span></div>
+                                    <div className="flex justify-between"><span className="font-medium text-gray-700">Créé le:</span><span>{selectedItem.date ? new Date(selectedItem.date).toLocaleDateString('fr-FR') : '—'}</span></div>
+                                    <div className="flex justify-between"><span className="font-medium text-gray-700">Prochaine visite:</span><span>{selectedItem.nextVisit ? new Date(selectedItem.nextVisit).toLocaleDateString('fr-FR') : '—'}</span></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

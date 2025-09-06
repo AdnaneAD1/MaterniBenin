@@ -45,7 +45,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { email, displayName, phoneNumber, role } = body || {};
+    const { email, displayName } = body || {};
 
     if (!email) {
       return NextResponse.json({ error: 'email requis' }, { status: 400 });
@@ -57,14 +57,9 @@ export async function POST(request) {
       email,
       password,
       displayName,
-      phoneNumber,
       emailVerified: false,
       disabled: false,
     });
-
-    if (role) {
-      await adminAuth.setCustomUserClaims(userRecord.uid, { role });
-    }
 
     // Attempt to send welcome email with generated password
     let emailSent = false;
@@ -108,8 +103,6 @@ export async function POST(request) {
         uid: userRecord.uid,
         email: userRecord.email,
         displayName: userRecord.displayName || displayName || null,
-        phoneNumber: userRecord.phoneNumber || phoneNumber || null,
-        role: role || null,
         generatedPassword: password, // Montrez-le uniquement côté admin et stockez-le de manière sécurisée
         emailSent,
       },

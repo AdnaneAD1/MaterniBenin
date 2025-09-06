@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth';
+import { useUser } from '@/hooks/user';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { 
   Search, 
@@ -26,75 +28,62 @@ export default function UtilisateursPage() {
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [currentPage, setCurrentPage] = useState(1);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [form, setForm] = useState({ nom: "", prenom: "", telephone: "", email: "", role: "Sage-femme" });
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [form, setForm] = useState({ nom: "", prenom: "", telephone: "", email: "", role: "sage-femme" });
     const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { createUser, loading } = useAuth();
+    const { getUsersWithDetails, loading: usersLoading, deleteUser } = useUser();
+    const [users, setUsers] = useState([]);
+    const [refreshUsers, setRefreshUsers] = useState(0);
     const itemsPerPage = 5;
 
-    // Sample data for users
-    const [users, setUsers] = useState([
-        {
-            id: 1,
-            nom: "Agossou",
-            prenom: "Marie",
-            telephone: "97000001",
-            email: "marie.agossou@hopital.bj",
-            role: "Sage-femme",
-            status: "Actif",
-            dateCreation: "2025-01-15",
-            avatar: "MA",
-            color: "bg-blue-100 text-blue-600"
-        },
-        {
-            id: 2,
-            nom: "Kpoviessi",
-            prenom: "Clarisse",
-            telephone: "97000002",
-            email: "clarisse.kpoviessi@hopital.bj",
-            role: "Sage-femme",
-            status: "Actif",
-            dateCreation: "2025-02-10",
-            avatar: "CK",
-            color: "bg-pink-100 text-pink-600"
-        },
-        {
-            id: 3,
-            nom: "Dansou",
-            prenom: "Edwige",
-            telephone: "97000003",
-            email: "edwige.dansou@hopital.bj",
-            role: "Sage-femme",
-            status: "Inactif",
-            dateCreation: "2025-03-05",
-            avatar: "ED",
-            color: "bg-green-100 text-green-600"
-        },
-        {
-            id: 4,
-            nom: "Lokonon",
-            prenom: "Danielle",
-            telephone: "97000004",
-            email: "danielle.lokonon@hopital.bj",
-            role: "Administrateur",
-            status: "Actif",
-            dateCreation: "2025-01-20",
-            avatar: "DL",
-            color: "bg-purple-100 text-purple-600"
-        },
-        {
-            id: 5,
-            nom: "Bocovo",
-            prenom: "Colette",
-            telephone: "97000005",
-            email: "colette.bocovo@hopital.bj",
-            role: "Sage-femme",
-            status: "Actif",
-            dateCreation: "2025-02-28",
-            avatar: "CB",
-            color: "bg-orange-100 text-orange-600"
-        }
-    ]);
+    const filters = ['Tous', 'Actif', 'Inactif', 'Sage-femme', 'Responsable'];
 
-    const filters = ['Tous', 'Actif', 'Inactif', 'Sage-femme', 'Administrateur'];
+    // Charger les utilisateurs depuis Firestore
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                const result = await getUsersWithDetails();
+                if (result.success) {
+                    // Transformer les données pour correspondre au format attendu par le tableau
+                    const transformedUsers = result.users.map(user => ({
+                        id: user.id,
+                        nom: user.lastName || '',
+                        prenom: user.firstName || '',
+                        telephone: user.phoneNumber || '',
+                        email: user.email || '',
+                        role: user.role === 'sage-femme' ? 'Sage-femme' : 'Responsable',
+                        status: user.statut || 'Actif',
+                        dateCreation: user.createdAt ? user.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                        avatar: `${(user.firstName || 'U').charAt(0)}${(user.lastName || 'U').charAt(0)}`,
+                        color: getRandomColor()
+                    }));
+                    setUsers(transformedUsers);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des utilisateurs:', error);
+            }
+        };
+
+        loadUsers();
+    }, [getUsersWithDetails, refreshUsers]);
+
+    // Fonction pour générer une couleur aléatoire pour l'avatar
+    const getRandomColor = () => {
+        const colors = [
+            'bg-blue-100 text-blue-600',
+            'bg-pink-100 text-pink-600',
+            'bg-green-100 text-green-600',
+            'bg-purple-100 text-purple-600',
+            'bg-orange-100 text-orange-600',
+            'bg-indigo-100 text-indigo-600',
+            'bg-red-100 text-red-600',
+            'bg-yellow-100 text-yellow-600'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    };
 
     const getStatusBadge = (status) => {
         const statusConfig = {
@@ -115,7 +104,7 @@ export default function UtilisateursPage() {
     const getRoleBadge = (role) => {
         const roleConfig = {
             'Sage-femme': 'bg-blue-100 text-blue-800',
-            'Administrateur': 'bg-purple-100 text-purple-800'
+            'Responsable': 'bg-purple-100 text-purple-800'
         };
         return roleConfig[role] || 'bg-gray-100 text-gray-800';
     };
@@ -130,7 +119,7 @@ export default function UtilisateursPage() {
         if (activeFilter === 'Actif') matchesFilter = user.status === 'Actif';
         else if (activeFilter === 'Inactif') matchesFilter = user.status === 'Inactif';
         else if (activeFilter === 'Sage-femme') matchesFilter = user.role === 'Sage-femme';
-        else if (activeFilter === 'Administrateur') matchesFilter = user.role === 'Administrateur';
+        else if (activeFilter === 'Responsable') matchesFilter = user.role === 'Responsable';
         
         return matchesSearch && matchesFilter;
     });
@@ -155,30 +144,78 @@ export default function UtilisateursPage() {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleAdd = (e) => {
+    const handleAdd = async (e) => {
         e.preventDefault();
         if (!form.nom || !form.prenom || !form.telephone || !form.email) {
             setError("Tous les champs sont obligatoires");
             return;
         }
         
-        const newUser = {
-            id: Date.now(),
-            ...form,
-            status: "Actif",
-            dateCreation: new Date().toISOString().split('T')[0],
-            avatar: `${form.prenom.charAt(0)}${form.nom.charAt(0)}`,
-            color: "bg-gray-100 text-gray-600"
-        };
-        
-        setUsers([newUser, ...users]);
-        setForm({ nom: "", prenom: "", telephone: "", email: "", role: "Sage-femme" });
+        setIsSubmitting(true);
         setError("");
-        setShowAddModal(false);
+        
+        try {
+            // Utiliser la fonction createUser du hook useAuth
+            const result = await createUser({
+                email: form.email,
+                firstName: form.prenom,
+                lastName: form.nom,
+                phoneNumber: form.telephone
+            });
+            
+            if (result && result.uid) {
+                // Ajouter l'utilisateur créé à la liste locale pour affichage immédiat
+                const newUser = {
+                    id: result.uid,
+                    nom: form.nom,
+                    prenom: form.prenom,
+                    telephone: form.telephone,
+                    email: form.email,
+                    role: form.role === "sage-femme" ? "Sage-femme" : "Responsable",
+                    status: "Actif",
+                    dateCreation: new Date().toISOString().split('T')[0],
+                    avatar: `${form.prenom.charAt(0)}${form.nom.charAt(0)}`,
+                    color: "bg-green-100 text-green-600"
+                };
+                
+                // Recharger la liste des utilisateurs
+                setRefreshUsers(prev => prev + 1);
+                setForm({ nom: "", prenom: "", telephone: "", email: "", role: "sage-femme" });
+                setShowAddModal(false);
+                
+                // Afficher un message de succès avec le mot de passe généré
+                if (result.generatedPassword) {
+                    alert(`Utilisateur créé avec succès!\n\nEmail: ${result.email}\nMot de passe temporaire: ${result.generatedPassword}\n\nVeuillez communiquer ces informations à l'utilisateur.`);
+                }
+            }
+        } catch (err) {
+            console.error('Erreur lors de la création de l\'utilisateur:', err);
+            setError(err.message || "Erreur lors de la création de l'utilisateur");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const handleRemove = (id) => {
-        setUsers(users.filter(u => u.id !== id));
+    const handleRemove = async (id) => {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+            try {
+                const result = await deleteUser(id);
+                if (result.success) {
+                    setUsers(users.filter(user => user.id !== id));
+                    alert('Utilisateur supprimé avec succès');
+                } else {
+                    alert('Erreur lors de la suppression: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                alert('Erreur lors de la suppression de l\'utilisateur');
+            }
+        }
+    };
+
+    const handleView = (user) => {
+        setSelectedUser(user);
+        setShowViewModal(true);
     };
 
     return (
@@ -232,9 +269,9 @@ export default function UtilisateursPage() {
                                 <Users className="w-6 h-6 text-purple-600" />
                             </div>
                             <div className="ml-4">
-                                <p className="text-sm text-gray-600">Administrateurs</p>
+                                <p className="text-sm text-gray-600">Responsables</p>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    {users.filter(u => u.role === 'Administrateur').length}
+                                    {users.filter(u => u.role === 'Responsable').length}
                                 </p>
                             </div>
                         </div>
@@ -249,10 +286,10 @@ export default function UtilisateursPage() {
                     </div>
                     
                     <div className="flex gap-3">
-                        <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        {/* <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                             <Download className="w-5 h-5 mr-2" />
                             Exporter
-                        </button>
+                        </button> */}
                         <button
                             onClick={() => setShowAddModal(true)}
                             className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -366,15 +403,17 @@ export default function UtilisateursPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
-                                                <button className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors">
+                                                <button 
+                                                    onClick={() => handleView(user)}
+                                                    className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors"
+                                                    title="Voir les détails"
+                                                >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
-                                                <button className="text-gray-600 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button
+                                                <button 
                                                     onClick={() => handleRemove(user.id)}
                                                     className="text-red-600 hover:text-red-900 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                                                    title="Supprimer l'utilisateur"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -503,9 +542,13 @@ export default function UtilisateursPage() {
                                     name="telephone"
                                     value={form.telephone}
                                     onChange={handleChange}
+                                    placeholder="Ex: 97000001 ou +22997000001"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
+                                {/* <p className="text-xs text-gray-500 mt-1">
+                                    Format accepté: numéro local (97000001) ou international (+22997000001)
+                                </p> */}
                             </div>
                             
                             <div>
@@ -520,7 +563,7 @@ export default function UtilisateursPage() {
                                 />
                             </div>
                             
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
                                 <select
                                     name="role"
@@ -529,10 +572,10 @@ export default function UtilisateursPage() {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 >
-                                    <option value="Sage-femme">Sage-femme</option>
-                                    <option value="Administrateur">Administrateur</option>
+                                    <option value="sage-femme">Sage-femme</option>
+                                    <option value="responsable">Responsable</option>
                                 </select>
-                            </div>
+                            </div> */}
                             
                             {error && (
                                 <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
@@ -550,12 +593,127 @@ export default function UtilisateursPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                                    disabled={isSubmitting || loading}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                                 >
-                                    Ajouter
+                                    {isSubmitting || loading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Création...
+                                        </>
+                                    ) : (
+                                        'Ajouter'
+                                    )}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de visualisation */}
+            {showViewModal && selectedUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 relative max-h-[90vh] overflow-auto">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+                            <div className="flex items-center">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium mr-3 ${selectedUser.color}`}>
+                                    {selectedUser.avatar}
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900">Détails de l&apos;utilisateur</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowViewModal(false)}
+                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 space-y-6">
+                            {/* Informations personnelles */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <Users className="w-5 h-5 mr-2 text-blue-500" />
+                                    Informations personnelles
+                                </h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">Nom complet</label>
+                                        <p className="text-lg font-semibold text-gray-900">{selectedUser.prenom} {selectedUser.nom}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">Rôle</label>
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleBadge(selectedUser.role)}`}>
+                                            <Users className="w-3 h-3 mr-1" />
+                                            {selectedUser.role}
+                                        </span>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">Statut</label>
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(selectedUser.status)}`}>
+                                            {getStatusIcon(selectedUser.status)}
+                                            <span className="ml-1">{selectedUser.status}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Informations de contact */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <Phone className="w-5 h-5 mr-2 text-green-500" />
+                                    Contact
+                                </h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                                        <div className="flex items-center">
+                                            <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                                            <p className="text-gray-900">{selectedUser.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">Téléphone</label>
+                                        <div className="flex items-center">
+                                            <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                                            <p className="text-gray-900">{selectedUser.telephone}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Informations système */}
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                    <AlertCircle className="w-5 h-5 mr-2 text-orange-500" />
+                                    Informations système
+                                </h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">ID utilisateur</label>
+                                        <p className="text-gray-900 font-mono text-sm">{selectedUser.id}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">Date de création</label>
+                                        <p className="text-gray-900">{new Date(selectedUser.dateCreation).toLocaleDateString('fr-FR', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+                            <button
+                                onClick={() => setShowViewModal(false)}
+                                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Fermer
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

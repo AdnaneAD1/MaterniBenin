@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useRapport } from '@/hooks/rapport';
+import GenerateRapportModal from '@/components/GenerateRapportModal';
+
 import { 
   Search, 
   Filter, 
@@ -28,101 +31,70 @@ export default function RapportsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Sample data for rapports
-    const [rapportsData, setRapportsData] = useState([
-        {
-            id: 'RPT001',
-            type: 'CPN',
-            titre: 'Rapport mensuel CPN - Juin 2025',
-            mois: 'Juin',
-            annee: 2025,
-            statut: 'Généré',
-            date_generation: '2025-07-01',
-            generateur: 'Sage-femme Lulla Devi',
-            taille: '2.4 MB',
-            pages: 15,
-            fichier: '/rapports/cpn_juin_2025.pdf',
-            avatar: 'CPN',
-            color: 'bg-blue-100 text-blue-600'
-        },
-        {
-            id: 'RPT002',
-            type: 'Accouchement',
-            titre: 'Rapport mensuel Accouchements - Mai 2025',
-            mois: 'Mai',
-            annee: 2025,
-            statut: 'Généré',
-            date_generation: '2025-06-01',
-            generateur: 'Sage-femme Lulla Devi',
-            taille: '3.1 MB',
-            pages: 22,
-            fichier: '/rapports/accouchement_mai_2025.pdf',
-            avatar: 'ACC',
-            color: 'bg-pink-100 text-pink-600'
-        },
-        {
-            id: 'RPT003',
-            type: 'Planification',
-            titre: 'Rapport mensuel Planification Familiale - Mai 2025',
-            mois: 'Mai',
-            annee: 2025,
-            statut: 'Généré',
-            date_generation: '2025-06-01',
-            generateur: 'Sage-femme Lulla Devi',
-            taille: '1.8 MB',
-            pages: 12,
-            fichier: '/rapports/planification_mai_2025.pdf',
-            avatar: 'PF',
-            color: 'bg-purple-100 text-purple-600'
-        },
-        {
-            id: 'RPT004',
-            type: 'Statistiques',
-            titre: 'Rapport trimestriel - Q2 2025',
-            mois: 'Juin',
-            annee: 2025,
-            statut: 'En cours',
-            date_generation: '2025-07-05',
-            generateur: 'Sage-femme Lulla Devi',
-            taille: '4.2 MB',
-            pages: 35,
-            fichier: '/rapports/stats_q2_2025.pdf',
-            avatar: 'STAT',
-            color: 'bg-green-100 text-green-600'
-        },
-        {
-            id: 'RPT005',
-            type: 'Annuel',
-            titre: 'Rapport annuel 2024',
-            mois: 'Décembre',
-            annee: 2024,
-            statut: 'Généré',
-            date_generation: '2025-01-15',
-            generateur: 'Sage-femme Lulla Devi',
-            taille: '8.7 MB',
-            pages: 68,
-            fichier: '/rapports/annuel_2024.pdf',
-            avatar: 'ANN',
-            color: 'bg-orange-100 text-orange-600'
-        },
-        {
-            id: 'RPT006',
-            type: 'CPN',
-            titre: 'Rapport mensuel CPN - Juillet 2025',
-            mois: 'Juillet',
-            annee: 2025,
-            statut: 'Planifié',
-            date_generation: '2025-08-01',
-            generateur: 'Sage-femme Lulla Devi',
-            taille: '0 MB',
-            pages: 0,
-            fichier: '',
-            avatar: 'CPN',
-            color: 'bg-blue-100 text-blue-600'
-        }
-    ]);
+    const { getAllReports, generateMonthlyReport, loading } = useRapport();
+    const [rapportsData, setRapportsData] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showGenerate, setShowGenerate] = useState(false);
+    const [selected, setSelected] = useState(null);
 
-    const filters = ['Tous', 'Généré', 'En cours', 'Planifié', 'Erreur'];
+    const filters = ['Tous', 'Généré'];
+
+    const formatBytes = (bytes) => {
+        if (!bytes && bytes !== 0) return 'N/A';
+        const sizes = ['B','KB','MB','GB'];
+        if (bytes === 0) return '0 B';
+        const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1);
+        const val = bytes / Math.pow(1024, i);
+        return `${val.toFixed(1)} ${sizes[i]}`;
+    };
+
+    const colorByType = (type) => ({
+        'CPN': 'bg-blue-100 text-blue-600',
+        'Accouchement': 'bg-pink-100 text-pink-600',
+        'Planification': 'bg-purple-100 text-purple-600',
+    })[type] || 'bg-indigo-100 text-indigo-600';
+
+    const avatarByType = (type) => ({
+        'CPN': 'CPN',
+        'Accouchement': 'ACC',
+        'Planification': 'PF',
+    })[type] || 'RPT';
+
+    const mapReport = (r) => {
+        return {
+            id: r.id,
+            type: r.type,
+            titre: `Rapport mensuel ${r.type} - ${r.mois} ${r.annee}`,
+            mois: r.mois,
+            annee: r.annee,
+            statut: r.pdfUrl ? 'Généré' : 'Planifié',
+            date_generation: r.createdAt?.toDate ? r.createdAt.toDate().toISOString() : (r.createdAt || null),
+            generateur: r.generatedBy || 'Système',
+            taille: formatBytes(r.fileSize),
+            pages: r.data?.pages || 0,
+            fichier: r.pdfUrl || '',
+            avatar: avatarByType(r.type),
+            color: colorByType(r.type),
+            original: r,
+        };
+    };
+
+    const loadReports = async () => {
+        try {
+            setIsLoading(true);
+            const res = await getAllReports();
+            if (res.success) {
+                setRapportsData(res.rapports.map(mapReport));
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadReports();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const getStatusBadge = (status) => {
         const statusConfig = {
@@ -132,16 +104,6 @@ export default function RapportsPage() {
             'Erreur': 'bg-red-100 text-red-800'
         };
         return statusConfig[status] || 'bg-gray-100 text-gray-800';
-    };
-
-    const getStatusIcon = (status) => {
-        switch(status) {
-            case 'Généré': return <CheckCircle className="w-4 h-4" />;
-            case 'En cours': return <Activity className="w-4 h-4" />;
-            case 'Planifié': return <Calendar className="w-4 h-4" />;
-            case 'Erreur': return <XCircle className="w-4 h-4" />;
-            default: return <AlertCircle className="w-4 h-4" />;
-        }
     };
 
     const getTypeBadge = (type) => {
@@ -192,7 +154,11 @@ export default function RapportsPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Total Rapports</p>
-                                <p className="text-2xl font-bold text-gray-900">{rapportsData.length}</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">{rapportsData.length}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -204,9 +170,13 @@ export default function RapportsPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Générés</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {rapportsData.filter(r => r.statut === 'Généré').length}
-                                </p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {rapportsData.filter(r => r.statut === 'Généré').length}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -218,9 +188,7 @@ export default function RapportsPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">En Cours</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {rapportsData.filter(r => r.statut === 'En cours').length}
-                                </p>
+                                <p className="text-2xl font-bold text-gray-900">0</p>
                             </div>
                         </div>
                     </div>
@@ -232,9 +200,7 @@ export default function RapportsPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Planifiés</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {rapportsData.filter(r => r.statut === 'Planifié').length}
-                                </p>
+                                <p className="text-2xl font-bold text-gray-900">{rapportsData.filter(r => r.statut === 'Planifié').length}</p>
                             </div>
                         </div>
                     </div>
@@ -248,11 +214,9 @@ export default function RapportsPage() {
                     </div>
                     
                     <div className="flex gap-3">
-                        <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                            <Download className="w-5 h-5 mr-2" />
-                            Exporter tout
-                        </button>
-                        <button className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
+                        <button
+                            onClick={() => setShowGenerate(true)}
+                            className="flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
                             <Plus className="w-5 h-5 mr-2" />
                             Nouveau Rapport
                         </button>
@@ -342,7 +306,7 @@ export default function RapportsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">{rapport.mois} {rapport.annee}</div>
                                             <div className="text-sm text-gray-500">
-                                                Généré le {new Date(rapport.date_generation).toLocaleDateString('fr-FR')}
+                                                {rapport.date_generation ? `Généré le ${new Date(rapport.date_generation).toLocaleDateString('fr-FR')}` : '—'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -356,7 +320,7 @@ export default function RapportsPage() {
                                                 {rapport.pages > 0 ? `${rapport.pages} pages` : 'N/A'}
                                             </div>
                                             <div className="text-sm text-gray-500">
-                                                {rapport.taille !== '0 MB' ? rapport.taille : 'N/A'}
+                                                {rapport.taille && rapport.taille !== '0 B' ? rapport.taille : 'N/A'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -370,14 +334,8 @@ export default function RapportsPage() {
                                                         <Download className="w-4 h-4" />
                                                     </a>
                                                 )}
-                                                <button className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors">
+                                                <button onClick={() => setSelected(rapport)} className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors">
                                                     <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-600 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <MoreVertical className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -442,10 +400,55 @@ export default function RapportsPage() {
                         <p className="text-gray-500 mb-6">
                             {searchTerm ? 'Aucun rapport ne correspond à votre recherche.' : 'Commencez par générer votre premier rapport.'}
                         </p>
-                        <button className="inline-flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
+                        <button onClick={() => setShowGenerate(true)} className="inline-flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
                             <Plus className="w-5 h-5 mr-2" />
                             Nouveau Rapport
                         </button>
+                    </div>
+                )}
+
+                {/* Generate Report Modal */}
+                {showGenerate && (
+                    <GenerateRapportModal
+                        open={showGenerate}
+                        onClose={() => setShowGenerate(false)}
+                        onGenerate={async ({ type, mois, annee }) => {
+                            const res = await generateMonthlyReport(type, mois, annee);
+                            if (res?.success) {
+                                await loadReports();
+                            }
+                            return res;
+                        }}
+                    />
+                )}
+
+                {/* Details Modal */}
+                {selected && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+                            <button
+                                className="absolute top-3 right-3 text-gray-500 hover:text-indigo-600 text-xl"
+                                onClick={() => setSelected(null)}
+                                aria-label="Fermer"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-bold text-indigo-600 mb-6">Détails du rapport</h2>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between"><span className="font-medium text-gray-700">Titre:</span><span>{selected.titre}</span></div>
+                                <div className="flex justify-between"><span className="font-medium text-gray-700">Type:</span><span>{selected.type}</span></div>
+                                <div className="flex justify-between"><span className="font-medium text-gray-700">Période:</span><span>{selected.mois} {selected.annee}</span></div>
+                                <div className="flex justify-between"><span className="font-medium text-gray-700">Statut:</span><span>{selected.statut}</span></div>
+                                <div className="flex justify-between"><span className="font-medium text-gray-700">Taille:</span><span>{selected.taille}</span></div>
+                                <div className="flex justify-between"><span className="font-medium text-gray-700">Généré le:</span><span>{selected.date_generation ? new Date(selected.date_generation).toLocaleDateString('fr-FR') : '—'}</span></div>
+                            </div>
+                            {selected.fichier && (
+                                <div className="mt-4 flex gap-2">
+                                    <a href={selected.fichier} target="_blank" rel="noreferrer" className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Ouvrir</a>
+                                    <a href={selected.fichier} download className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Télécharger</a>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { usePatiente } from '@/hooks/patientes';
 import { 
   Search, 
   Filter, 
@@ -25,133 +26,75 @@ export default function CPNPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Toutes');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedCpn, setSelectedCpn] = useState(null);
     const itemsPerPage = 5;
 
-    // Sample data for CPN
-    const [cpnData, setCpnData] = useState([
-        {
-            id: 'CPN001',
-            patientName: 'Afiavi HOUNSA',
-            patientId: 'PT001',
-            date: '2025-06-01',
-            time: '09:30',
-            gestationalAge: '24 semaines',
-            visitNumber: 2,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'Terminé',
-            type: 'CPN - 2ème trimestre',
-            avatar: 'AH',
-            color: 'bg-blue-100 text-blue-600',
-            notes: 'Consultation normale, développement satisfaisant'
-        },
-        {
-            id: 'CPN002',
-            patientName: 'Blandine AGOSSOU',
-            patientId: 'PT002',
-            date: '2025-06-05',
-            time: '10:15',
-            gestationalAge: '12 semaines',
-            visitNumber: 1,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'Terminé',
-            type: 'CPN - 1er trimestre',
-            avatar: 'BA',
-            color: 'bg-pink-100 text-pink-600',
-            notes: 'Première consultation, examens de routine effectués'
-        },
-        {
-            id: 'CPN003',
-            patientName: 'Edwige DANSOU',
-            patientId: 'PT005',
-            date: '2025-06-14',
-            time: '14:00',
-            gestationalAge: '18 semaines',
-            visitNumber: 1,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'Terminé',
-            type: 'CPN - 2ème trimestre',
-            avatar: 'ED',
-            color: 'bg-orange-100 text-orange-600',
-            notes: 'Échographie morphologique programmée'
-        },
-        {
-            id: 'CPN004',
-            patientName: 'Danielle LOKONON',
-            patientId: 'PT004',
-            date: '2025-06-23',
-            time: '11:30',
-            gestationalAge: '34 semaines',
-            visitNumber: 3,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'Planifié',
-            type: 'CPN - 3ème trimestre',
-            avatar: 'DL',
-            color: 'bg-purple-100 text-purple-600',
-            notes: 'Suivi grossesse à risque'
-        },
-        {
-            id: 'CPN005',
-            patientName: 'Colette BOCOVO',
-            patientId: 'PT003',
-            date: '2025-06-22',
-            time: '15:45',
-            gestationalAge: 'Post-partum',
-            visitNumber: 1,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'Planifié',
-            type: 'Suivi post-accouchement',
-            avatar: 'CB',
-            color: 'bg-green-100 text-green-600',
-            notes: 'Contrôle post-natal'
-        },
-        {
-            id: 'CPN006',
-            patientName: 'Estelle KOUDJO',
-            patientId: 'PT006',
-            date: '2025-06-24',
-            time: '16:30',
-            gestationalAge: '28 semaines',
-            visitNumber: 2,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'En attente',
-            type: 'CPN - 3ème trimestre',
-            avatar: 'EK',
-            color: 'bg-indigo-100 text-indigo-600',
-            notes: 'Confirmation rendez-vous en attente'
-        },
-        {
-            id: 'CPN007',
-            patientName: 'Fatima ALASSANE',
-            patientId: 'PT007',
-            date: '2025-06-25',
-            time: '08:00',
-            gestationalAge: '16 semaines',
-            visitNumber: 1,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'Planifié',
-            type: 'CPN - 2ème trimestre',
-            avatar: 'FA',
-            color: 'bg-teal-100 text-teal-600',
-            notes: 'Première consultation prénatale'
-        },
-        {
-            id: 'CPN008',
-            patientName: 'Grace MENSAH',
-            patientId: 'PT008',
-            date: '2025-06-26',
-            time: '13:15',
-            gestationalAge: '30 semaines',
-            visitNumber: 3,
-            doctor: 'Sage-femme Lulla Devi',
-            status: 'En attente',
-            type: 'CPN - 3ème trimestre',
-            avatar: 'GM',
-            color: 'bg-rose-100 text-rose-600',
-            notes: 'Suivi de grossesse gémellaire'
-        }
-    ]);
+    const { getCpnConsultations, getCpnStats, loading } = usePatiente();
+    const [cpnData, setCpnData] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const filters = ['Toutes', 'Terminé', 'Planifié', 'En attente', 'Annulé'];
+    // Load CPN data and stats
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const [cpnResult, statsResult] = await Promise.all([
+                    getCpnConsultations(),
+                    getCpnStats()
+                ]);
+                
+                if (cpnResult.success && cpnResult.cpnConsultations) {
+                    const transformedCpn = cpnResult.cpnConsultations.map(cpn => ({
+                        id: cpn.id,
+                        patientName: `${cpn.patient.prenom || ''} ${cpn.patient.nom || ''}`.trim(),
+                        patientId: cpn.patient.patientId,
+                        date: cpn.rdv,
+                        status: cpn.status,
+                        diagnostique: cpn.diagnostique,
+                        dateConsultation: cpn.dateConsultation,
+                        userId: cpn.userId,
+                        cpnDone: cpn.cpnDone,
+                        patient: cpn.patient,
+                        avatar: `${(cpn.patient.prenom || 'P').charAt(0)}${(cpn.patient.nom || 'P').charAt(0)}`,
+                        color: getRandomColor()
+                    }));
+                    setCpnData(transformedCpn);
+                }
+                
+                if (statsResult.success) {
+                    setStats(statsResult.stats);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des données CPN:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        loadData();
+    }, []);
+
+    // Generate random color for avatar
+    const getRandomColor = () => {
+        const colors = [
+            'bg-blue-100 text-blue-600',
+            'bg-pink-100 text-pink-600',
+            'bg-green-100 text-green-600',
+            'bg-purple-100 text-purple-600',
+            'bg-orange-100 text-orange-600',
+            'bg-indigo-100 text-indigo-600',
+            'bg-red-100 text-red-600',
+            'bg-yellow-100 text-yellow-600'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    };
+
+
+    // Use real data if available, otherwise fallback
+    const displayCpnData = cpnData.length > 0 ? cpnData : [];
+
+    const filters = ['Toutes', 'Terminé', 'Planifié', 'En attente'];
 
     const getStatusBadge = (status) => {
         const statusConfig = {
@@ -174,10 +117,11 @@ export default function CPNPage() {
     };
 
     // Filter the CPN data based on search term and active filter
-    const filteredCpn = cpnData.filter(cpn => {
+    const filteredCpn = displayCpnData.filter(cpn => {
         const matchesSearch = cpn.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             cpn.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            cpn.type.toLowerCase().includes(searchTerm.toLowerCase());
+                            (cpn.type && cpn.type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (cpn.diagnostique && cpn.diagnostique.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesFilter = activeFilter === 'Toutes' || cpn.status === activeFilter;
         return matchesSearch && matchesFilter;
     });
@@ -210,7 +154,11 @@ export default function CPNPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Total CPN</p>
-                                <p className="text-2xl font-bold text-gray-900">{cpnData.length}</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">{stats?.totalCpnConsultations || displayCpnData.length}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -222,9 +170,13 @@ export default function CPNPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Terminées</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {cpnData.filter(c => c.status === 'Terminé').length}
-                                </p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.completedCpns || displayCpnData.filter(c => c.status === 'Terminé').length}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -236,9 +188,13 @@ export default function CPNPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Planifiées</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {cpnData.filter(c => c.status === 'Planifié').length}
-                                </p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.plannedCpns || displayCpnData.filter(c => c.status === 'Planifié').length}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -250,9 +206,13 @@ export default function CPNPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">En Attente</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {cpnData.filter(c => c.status === 'En attente').length}
-                                </p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.pendingCpns || displayCpnData.filter(c => c.status === 'En attente').length}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -263,17 +223,6 @@ export default function CPNPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Consultations Prénatales</h1>
                         <p className="text-gray-500 mt-1">Gérez et suivez toutes les consultations CPN</p>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                        <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                            <Download className="w-5 h-5 mr-2" />
-                            Exporter
-                        </button>
-                        <button className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                            <Plus className="w-5 h-5 mr-2" />
-                            Nouvelle CPN
-                        </button>
                     </div>
                 </div>
 
@@ -355,20 +304,20 @@ export default function CPNPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{cpn.type}</div>
-                                            <div className="text-sm text-gray-500">{cpn.doctor}</div>
+                                            <div className="text-sm text-gray-900">{cpn.type || 'CPN'}</div>
+                                            <div className="text-sm text-gray-500">{cpn.doctor || 'Sage-femme'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {new Date(cpn.date).toLocaleDateString('fr-FR')}
+                                                {cpn.date ? new Date(cpn.date).toLocaleDateString('fr-FR') : 'Non définie'}
                                             </div>
-                                            <div className="text-sm text-gray-500">{cpn.time}</div>
+                                            <div className="text-sm text-gray-500">{cpn.time || '--:--'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{cpn.visitNumber}</div>
+                                            <div className="text-sm font-medium text-gray-900">{cpn.visitNumber || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{cpn.gestationalAge}</div>
+                                            <div className="text-sm text-gray-900">{cpn.gestationalAge || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(cpn.status)}`}>
@@ -378,14 +327,12 @@ export default function CPNPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
-                                                <button className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors">
+                                                <button 
+                                                    onClick={() => setSelectedCpn(cpn)}
+                                                    className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors"
+                                                    title="Voir les détails"
+                                                >
                                                     <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-600 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <MoreVertical className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -450,10 +397,134 @@ export default function CPNPage() {
                         <p className="text-gray-500 mb-6">
                             {searchTerm ? 'Aucune consultation ne correspond à votre recherche.' : 'Commencez par planifier votre première consultation.'}
                         </p>
-                        <button className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                            <Plus className="w-5 h-5 mr-2" />
-                            Nouvelle CPN
-                        </button>
+                    </div>
+                )}
+
+                {/* CPN Details Modal */}
+                {selectedCpn && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+                            <button
+                                className="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-xl"
+                                onClick={() => setSelectedCpn(null)}
+                                aria-label="Fermer"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-bold text-blue-600 mb-6">Détails de la consultation CPN</h2>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Patient Information */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2">Informations Patiente</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium ${selectedCpn.color}`}>
+                                                {selectedCpn.avatar}
+                                            </div>
+                                            <div className="ml-3">
+                                                <div className="font-medium text-gray-900">{selectedCpn.patientName}</div>
+                                                <div className="text-sm text-gray-500">ID: {selectedCpn.patientId}</div>
+                                            </div>
+                                        </div>
+                                        {selectedCpn.patient && (
+                                            <>
+                                                {selectedCpn.patient.age && (
+                                                    <div className="flex justify-between">
+                                                        <span className="font-medium text-gray-700">Âge :</span>
+                                                        <span>{selectedCpn.patient.age} ans</span>
+                                                    </div>
+                                                )}
+                                                {selectedCpn.patient.telephone && (
+                                                    <div className="flex justify-between">
+                                                        <span className="font-medium text-gray-700">Téléphone :</span>
+                                                        <span>{selectedCpn.patient.telephone}</span>
+                                                    </div>
+                                                )}
+                                                {selectedCpn.patient.adresse && (
+                                                    <div className="flex justify-between">
+                                                        <span className="font-medium text-gray-700">Adresse :</span>
+                                                        <span>{selectedCpn.patient.adresse}</span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Consultation Information */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2">Informations Consultation</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="font-medium text-gray-700">ID Consultation :</span>
+                                            <span>{selectedCpn.id}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="font-medium text-gray-700">Date RDV :</span>
+                                            <span>{selectedCpn.date ? new Date(selectedCpn.date).toLocaleDateString('fr-FR') : 'Non définie'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-medium text-gray-700">Statut :</span>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(selectedCpn.status)}`}>
+                                                {getStatusIcon(selectedCpn.status)}
+                                                <span className="ml-1">{selectedCpn.status}</span>
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="font-medium text-gray-700">CPN Effectuée :</span>
+                                            <span className={selectedCpn.cpnDone ? 'text-green-600' : 'text-red-600'}>
+                                                {selectedCpn.cpnDone ? 'Oui' : 'Non'}
+                                            </span>
+                                        </div>
+                                        {selectedCpn.visitNumber && (
+                                            <div className="flex justify-between">
+                                                <span className="font-medium text-gray-700">Numéro de visite :</span>
+                                                <span>{selectedCpn.visitNumber}</span>
+                                            </div>
+                                        )}
+                                        {selectedCpn.gestationalAge && (
+                                            <div className="flex justify-between">
+                                                <span className="font-medium text-gray-700">Âge gestationnel :</span>
+                                                <span>{selectedCpn.gestationalAge}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Diagnostic */}
+                            {selectedCpn.diagnostique && (
+                                <div className="mt-6">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Diagnostic</h3>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <p className="text-gray-700">{selectedCpn.diagnostique}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Notes */}
+                            {selectedCpn.notes && (
+                                <div className="mt-6">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Notes</h3>
+                                    <div className="bg-blue-50 p-4 rounded-lg">
+                                        <p className="text-gray-700">{selectedCpn.notes}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Date de consultation */}
+                            {selectedCpn.dateConsultation && (
+                                <div className="mt-6">
+                                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                                        <span className="font-medium text-gray-700">Date de consultation effectuée :</span>
+                                        <span className="text-green-600 font-medium">
+                                            {new Date(selectedCpn.dateConsultation.seconds * 1000).toLocaleDateString('fr-FR')}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

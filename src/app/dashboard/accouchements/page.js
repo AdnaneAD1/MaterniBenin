@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { usePatiente } from '@/hooks/patientes';
+
 import { 
   Search, 
   Filter, 
@@ -14,8 +16,6 @@ import {
   Plus,
   Download,
   MoreVertical,
-  CheckCircle,
-  AlertCircle,
   XCircle,
   Heart,
   Activity,
@@ -28,102 +28,90 @@ export default function AccouchementPage() {
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+    const [selectedAccouchement, setSelectedAccouchement] = useState(null);
 
-    // Sample data for accouchements
-    const [accouchementData, setAccouchementData] = useState([
-        {
-            id: 'ACC001',
-            patientName: 'Colette BOCOVO',
-            patientId: 'PT003',
-            date: '2025-06-10',
-            time: '08:45',
-            gender: 'F',
-            weight: '3.2',
-            type: 'Voie basse',
-            outcome: 'Vivant',
-            complications: 'Aucune',
-            avatar: 'CB',
-            color: 'bg-green-100 text-green-600',
-            doctor: 'Sage-femme Lulla Devi'
-        },
-        {
-            id: 'ACC002',
-            patientName: 'Francine YEHOUESSI',
-            patientId: 'PT006',
-            date: '2025-06-08',
-            time: '14:30',
-            gender: 'M',
-            weight: '3.5',
-            type: 'Voie basse',
-            outcome: 'Vivant',
-            complications: 'Aucune',
-            avatar: 'FY',
-            color: 'bg-blue-100 text-blue-600',
-            doctor: 'Sage-femme Lulla Devi'
-        },
-        {
-            id: 'ACC003',
-            patientName: 'Gisèle AKPLOGAN',
-            patientId: 'PT007',
-            date: '2025-06-05',
-            time: '23:15',
-            gender: 'F',
-            weight: '2.9',
-            type: 'Césarienne',
-            outcome: 'Vivant',
-            complications: 'Prééclampsie',
-            avatar: 'GA',
-            color: 'bg-orange-100 text-orange-600',
-            doctor: 'Sage-femme Lulla Devi'
-        },
-        {
-            id: 'ACC004',
-            patientName: 'Huguette TOGBADJA',
-            patientId: 'PT008',
-            date: '2025-06-02',
-            time: '10:20',
-            gender: 'M',
-            weight: '3.1',
-            type: 'Voie basse',
-            outcome: 'Vivant',
-            complications: 'Aucune',
-            avatar: 'HT',
-            color: 'bg-purple-100 text-purple-600',
-            doctor: 'Sage-femme Lulla Devi'
-        },
-        {
-            id: 'ACC005',
-            patientName: 'Irène DOSSOU',
-            patientId: 'PT009',
-            date: '2025-06-01',
-            time: '16:45',
-            gender: 'F',
-            weight: '3.4',
-            type: 'Voie basse',
-            outcome: 'Vivant',
-            complications: 'Aucune',
-            avatar: 'ID',
-            color: 'bg-pink-100 text-pink-600',
-            doctor: 'Sage-femme Lulla Devi'
-        },
-        {
-            id: 'ACC006',
-            patientName: 'Joséphine KPOHINTO',
-            patientId: 'PT010',
-            date: '2025-05-30',
-            time: '12:30',
-            gender: 'M',
-            weight: '3.0',
-            type: 'Césarienne',
-            outcome: 'Vivant',
-            complications: 'Détresse fœtale',
-            avatar: 'JK',
-            color: 'bg-indigo-100 text-indigo-600',
-            doctor: 'Sage-femme Lulla Devi'
-        }
-    ]);
+    const { getAccouchements, getAccouchementStats, loading } = usePatiente();
+    const [realAccouchements, setRealAccouchements] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const filters = ['Tous', 'Voie basse', 'Césarienne', 'Avec complications', 'Sans complications'];
+
+    // Use real data if available, otherwise fallback
+    const displayAccouchements = realAccouchements.length > 0 ? realAccouchements : [];
+
+    // Load accouchements and stats
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const [accResult, statsResult] = await Promise.all([
+                    getAccouchements(),
+                    getAccouchementStats()
+                ]);
+
+                if (accResult.success && accResult.accouchements) {
+                    const transformed = accResult.accouchements.map((acc) => {
+                        const patientName = `${acc.patient?.prenom || ''} ${acc.patient?.nom || ''}`.trim();
+                        const enfants = Array.isArray(acc.enfants) ? acc.enfants : [];
+                        const childCount = enfants.length;
+                        const firstChild = childCount > 0 ? enfants[0] : null;
+                        const rawSex = firstChild?.sexeEnfant?.toString().toLowerCase() || '';
+                        const gender = childCount === 1
+                            ? (rawSex.includes('m') || rawSex.includes('mascul') || rawSex.includes('gar') ? 'M' : 'F')
+                            : 'Multiple';
+                        const weight = childCount === 1 ? (firstChild?.poids || null) : null;
+                        const initials = `${(acc.patient?.prenom || 'P').charAt(0)}${(acc.patient?.nom || 'P').charAt(0)}`;
+
+                        return {
+                            id: acc.id,
+                            patientName,
+                            patientId: acc.patient?.patientId,
+                            date: acc.dateAccouchement || (acc.createdAt?.seconds ? new Date(acc.createdAt.seconds * 1000).toISOString().split('T')[0] : null),
+                            time: acc.heureAccouchement || '',
+                            gender,
+                            weight,
+                            type: acc.modeAccouchement || 'Inconnu',
+                            avatar: initials,
+                            color: getRandomColor(),
+                            doctor: 'Sage-femme',
+                            childCount,
+                            children: enfants,
+                            original: acc
+                        };
+                    });
+                    setRealAccouchements(transformed);
+                }
+
+                if (statsResult.success) {
+                    setStats(statsResult.stats);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des accouchements:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadData();
+        // Intentionally not adding hook functions to deps to avoid re-renders loop
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Generate random color for avatar
+    const getRandomColor = () => {
+        const colors = [
+            'bg-blue-100 text-blue-600',
+            'bg-pink-100 text-pink-600',
+            'bg-green-100 text-green-600',
+            'bg-purple-100 text-purple-600',
+            'bg-orange-100 text-orange-600',
+            'bg-indigo-100 text-indigo-600',
+            'bg-red-100 text-red-600',
+            'bg-yellow-100 text-yellow-600'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    };
+
+    const filters = ['Tous', 'Voie basse', 'Césarienne'];
 
     const getTypeBadge = (type) => {
         const typeConfig = {
@@ -145,22 +133,16 @@ export default function AccouchementPage() {
         return gender === 'M' ? '👶🏽' : '👶🏽';
     };
 
-    const getComplicationsBadge = (complications) => {
-        return complications === 'Aucune' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800';
-    };
+    
 
     // Filter the accouchement data based on search term and active filter
-    const filteredAccouchements = accouchementData.filter(acc => {
+    const filteredAccouchements = displayAccouchements.filter(acc => {
         const matchesSearch = acc.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             acc.id.toLowerCase().includes(searchTerm.toLowerCase());
         
         let matchesFilter = true;
         if (activeFilter === 'Voie basse') matchesFilter = acc.type === 'Voie basse';
         else if (activeFilter === 'Césarienne') matchesFilter = acc.type === 'Césarienne';
-        else if (activeFilter === 'Avec complications') matchesFilter = acc.complications !== 'Aucune';
-        else if (activeFilter === 'Sans complications') matchesFilter = acc.complications === 'Aucune';
         
         return matchesSearch && matchesFilter;
     });
@@ -185,7 +167,7 @@ export default function AccouchementPage() {
         <DashboardLayout title="Gestion des Accouchements">
             <div className="p-6 space-y-6">
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center">
                             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -193,7 +175,11 @@ export default function AccouchementPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Total Accouchements</p>
-                                <p className="text-2xl font-bold text-gray-900">{accouchementData.length}</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">{stats?.totalAccouchements || displayAccouchements.length}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -205,9 +191,13 @@ export default function AccouchementPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Voie Basse</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {accouchementData.filter(a => a.type === 'Voie basse').length}
-                                </p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.modesAccouchement?.voieBasse ?? displayAccouchements.filter(a => a.type === 'Voie basse').length}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -219,26 +209,18 @@ export default function AccouchementPage() {
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Césariennes</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {accouchementData.filter(a => a.type === 'Césarienne').length}
-                                </p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.modesAccouchement?.cesarienne ?? displayAccouchements.filter(a => a.type === 'Césarienne').length}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center">
-                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-red-600" />
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm text-gray-600">Avec Complications</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {accouchementData.filter(a => a.complications !== 'Aucune').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </div>
 
                 {/* Header Section */}
@@ -246,17 +228,6 @@ export default function AccouchementPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Gestion des Accouchements</h1>
                         <p className="text-gray-500 mt-1">Suivez et gérez tous les accouchements</p>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                        <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                            <Download className="w-5 h-5 mr-2" />
-                            Exporter
-                        </button>
-                        <button className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                            <Plus className="w-5 h-5 mr-2" />
-                            Nouvel Accouchement
-                        </button>
                     </div>
                 </div>
 
@@ -312,9 +283,7 @@ export default function AccouchementPage() {
                                     <th className="px-6 py-5 text-left text-sm font-bold text-gray-900 bg-gradient-to-r from-pink-50 to-purple-50 border-b-2 border-pink-200">
                                         Type d&apos;accouchement
                                     </th>
-                                    <th className="px-6 py-5 text-left text-sm font-bold text-gray-900 bg-gradient-to-r from-pink-50 to-purple-50 border-b-2 border-pink-200">
-                                        Complications
-                                    </th>
+                                    
                                     <th className="px-6 py-5 text-left text-sm font-bold text-gray-900 bg-gradient-to-r from-pink-50 to-purple-50 border-b-2 border-pink-200">
                                         Actions
                                     </th>
@@ -336,18 +305,18 @@ export default function AccouchementPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {new Date(acc.date).toLocaleDateString('fr-FR')}
+                                                {acc.date ? new Date(acc.date).toLocaleDateString('fr-FR') : 'Non définie'}
                                             </div>
-                                            <div className="text-sm text-gray-500">{acc.time}</div>
+                                            <div className="text-sm text-gray-500">{acc.time || '--:--'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <span className="text-lg mr-2">{getGenderIcon(acc.gender)}</span>
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {acc.gender === 'M' ? 'Garçon' : 'Fille'}
+                                                        {acc.childCount && acc.childCount > 1 ? `${acc.childCount} bébés` : (acc.gender === 'M' ? 'Garçon' : 'Fille')}
                                                     </div>
-                                                    <div className="text-sm text-gray-500">{acc.weight} kg</div>
+                                                    <div className="text-sm text-gray-500">{acc.weight ? `${acc.weight} kg` : '-'}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -357,26 +326,15 @@ export default function AccouchementPage() {
                                                 <span className="ml-1">{acc.type}</span>
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getComplicationsBadge(acc.complications)}`}>
-                                                {acc.complications === 'Aucune' ? (
-                                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                                ) : (
-                                                    <AlertCircle className="w-3 h-3 mr-1" />
-                                                )}
-                                                {acc.complications}
-                                            </span>
-                                        </td>
+                                        
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
-                                                <button className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors">
+                                                <button
+                                                    onClick={() => setSelectedAccouchement(acc)}
+                                                    className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors"
+                                                    title="Voir les détails"
+                                                >
                                                     <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-600 hover:text-gray-900 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <MoreVertical className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -441,13 +399,92 @@ export default function AccouchementPage() {
                         <p className="text-gray-500 mb-6">
                             {searchTerm ? 'Aucun accouchement ne correspond à votre recherche.' : 'Commencez par enregistrer votre premier accouchement.'}
                         </p>
-                        <button className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                            <Plus className="w-5 h-5 mr-2" />
-                            Nouvel Accouchement
-                        </button>
+                    </div>
+                )}
+
+                {/* Détails Accouchement Modal */}
+                {selectedAccouchement && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+                            <button
+                                className="absolute top-3 right-3 text-gray-500 hover:text-pink-600 text-xl"
+                                onClick={() => setSelectedAccouchement(null)}
+                                aria-label="Fermer"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-bold text-pink-600 mb-6">Détails de l&apos;accouchement</h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Patient Information */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2">Informations Patiente</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium ${selectedAccouchement.color}`}>
+                                                {selectedAccouchement.avatar}
+                                            </div>
+                                            <div className="ml-3">
+                                                <div className="font-medium text-gray-900">{selectedAccouchement.patientName}</div>
+                                                <div className="text-sm text-gray-500">ID: {selectedAccouchement.patientId}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Accouchement Information */}
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2">Informations</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="font-medium text-gray-700">ID :</span>
+                                            <span>{selectedAccouchement.id}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="font-medium text-gray-700">Date :</span>
+                                            <span>{selectedAccouchement.date ? new Date(selectedAccouchement.date).toLocaleDateString('fr-FR') : 'Non définie'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="font-medium text-gray-700">Heure :</span>
+                                            <span>{selectedAccouchement.time || '--:--'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-medium text-gray-700">Type :</span>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeBadge(selectedAccouchement.type)}`}>
+                                                {getTypeIcon(selectedAccouchement.type)}
+                                                <span className="ml-1">{selectedAccouchement.type}</span>
+                                            </span>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Enfants */}
+                            {selectedAccouchement.children && selectedAccouchement.children.length > 0 && (
+                                <div className="mt-6">
+                                    <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Enfant(s)</h3>
+                                    <div className="space-y-2">
+                                        {selectedAccouchement.children.map((enfant, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                <div className="text-gray-700">
+                                                    {enfant.prenomEnfant || enfant.nomEnfant ? `${enfant.prenomEnfant || ''} ${enfant.nomEnfant || ''}`.trim() : `Enfant ${idx + 1}`}
+                                                </div>
+                                                <div className="text-gray-600 flex items-center gap-4">
+                                                    <span>Sexe: {enfant.sexeEnfant || 'N/A'}</span>
+                                                    <span>Poids: {enfant.poids ? `${enfant.poids} kg` : 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
         </DashboardLayout>
     );
 }
+
+/* Modal moved inside component return */

@@ -11,6 +11,7 @@ import {
   Home,
   ChevronRight
 } from 'lucide-react';
+import { useAuth } from '@/hooks/auth';
 
 const Header = ({ title, onToggleSidebar }) => {
   const [notifications, setNotifications] = useState([
@@ -23,13 +24,16 @@ const Header = ({ title, onToggleSidebar }) => {
   const [activeTimeFilter, setActiveTimeFilter] = useState('Today');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const user = {
-    name: 'Lulla Devi',
-    role: 'Dept Admin',
-    initials: 'LD'
-  };
+  const { currentUser, loading } = useAuth();
+  const displayName = (currentUser?.displayName 
+    || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() 
+    || currentUser?.email 
+    || 'Utilisateur').trim();
+  const role = currentUser?.role || 'Utilisateur';
+  const initials = displayName
+    ? displayName.split(' ').filter(Boolean).map(p => p[0]?.toUpperCase()).join('').slice(0,2)
+    : 'U';
 
-  
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -72,11 +76,11 @@ const Header = ({ title, onToggleSidebar }) => {
             {/* User Profile */}
             <div className="flex items-center space-x-3 pl-3 border-l border-gray-200">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-white text-sm font-medium">{user.initials}</span>
+                <span className="text-white text-sm font-medium">{loading ? '…' : initials}</span>
               </div>
               <div className="hidden lg:block">
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.role}</p>
+                <p className="text-sm font-medium text-gray-900">{loading ? 'Connexion…' : displayName}</p>
+                <p className="text-xs text-gray-500">{loading ? '' : role}</p>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { 
   Eye, 
@@ -16,8 +16,56 @@ import {
   Phone,
   DollarSign
 } from 'lucide-react';
+import { usePatiente } from '@/hooks/patientes';
+import { useAuth } from '@/hooks/auth';
 
 export default function Dashboard() {
+  const { currentUser } = useAuth();
+  const displayName = (currentUser?.displayName 
+    || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() 
+    || currentUser?.email 
+    || 'Utilisateur').trim();
+
+  const { patientes, getPatientStats, getCpnStats, getAccouchementStats, getCpnConsultations } = usePatiente();
+  const [patientStats, setPatientStats] = useState(null);
+  const [cpnStats, setCpnStats] = useState(null);
+  const [accStats, setAccStats] = useState(null);
+  const [upcoming, setUpcoming] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const [p, cpn, acc, upc] = await Promise.all([
+          getPatientStats(),
+          getCpnStats(),
+          getAccouchementStats(),
+          getCpnConsultations(),
+        ]);
+        if (!mounted) return;
+        if (p.success) setPatientStats(p.stats); else setError(p.error || new Error('Erreur stats patientes'));
+        if (cpn.success) setCpnStats(cpn.stats); else setError(cpn.error || new Error('Erreur stats CPN'));
+        if (acc.success) setAccStats(acc.stats); else setError(acc.error || new Error('Erreur stats accouchements'));
+        if (upc.success) setUpcoming(upc.cpnConsultations || []); else setError(upc.error || new Error('Erreur chargement CPN'));
+      } catch (e) {
+        if (mounted) setError(e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const topPatients = Math.max(
+    Number.isFinite(patientStats?.totalPatients) ? patientStats.totalPatients : 0,
+    Array.isArray(patientes) ? patientes.length : 0
+  );
+  const topCpn = patientStats?.cpnThisMonth ?? cpnStats?.totalCpnConsultations ?? 0;
+  const topAcc = accStats?.accouchementsThisMonth ?? 0;
+
   return (
     <DashboardLayout title="Dashboard">
       <div className="p-6 space-y-6">
@@ -44,7 +92,7 @@ export default function Dashboard() {
 
   <div className="relative z-10">
     <p className="text-white/80 mb-2">Bonjour,</p>
-    <h1 className="text-3xl font-bold mb-2 text-white">Sage-femme Lulla Devi</h1>
+    <h1 className="text-3xl font-bold mb-2 text-white" style={{ color: "white" }}>{displayName}</h1>
     <p className="text-white/80 mb-8">Votre planning d&apos;aujourd&apos;hui.</p>
 
     {/* Stats plus légères */}
@@ -54,7 +102,7 @@ export default function Dashboard() {
           <Eye className="w-5 h-5 text-white" />
         </div>
         <div>
-          <div className="text-xl font-bold text-white">15</div>
+          <div className="text-xl font-bold text-white">{loading ? '…' : topPatients}</div>
           <div className="text-sm text-white/80">Patientes</div>
         </div>
       </div>
@@ -64,7 +112,7 @@ export default function Dashboard() {
           <Stethoscope className="w-5 h-5 text-white" />
         </div>
         <div>
-          <div className="text-xl font-bold text-white">8</div>
+          <div className="text-xl font-bold text-white">{loading ? '…' : topCpn}</div>
           <div className="text-sm text-white/80">CPN</div>
         </div>
       </div>
@@ -74,7 +122,7 @@ export default function Dashboard() {
           <Baby className="w-5 h-5 text-white" />
         </div>
         <div>
-          <div className="text-xl font-bold text-white">3</div>
+          <div className="text-xl font-bold text-white">{loading ? '…' : topAcc}</div>
           <div className="text-sm text-white/80">Accouchements</div>
         </div>
       </div>
@@ -91,8 +139,8 @@ export default function Dashboard() {
                 <Eye className="w-6 h-6 text-green-600" />
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">124</div>
-                <div className="text-sm text-gray-500">Nouvelles Patientes</div>
+                <div className="text-2xl font-bold text-gray-900">{loading ? '…' : topPatients}</div>
+                <div className="text-sm text-gray-500">Total Patientes</div>
               </div>
             </div>
             <div className="flex items-center justify-between mb-2">
@@ -110,8 +158,8 @@ export default function Dashboard() {
                 <Stethoscope className="w-6 h-6 text-blue-600" />
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">89</div>
-                <div className="text-sm text-gray-500">CPN Patientes</div>
+                <div className="text-2xl font-bold text-gray-900">{loading ? '…' : (cpnStats?.totalCpnConsultations ?? 0)}</div>
+                <div className="text-sm text-gray-500">Consultations CPN</div>
               </div>
             </div>
             <div className="flex items-center justify-between mb-2">
@@ -129,7 +177,7 @@ export default function Dashboard() {
                 <Baby className="w-6 h-6 text-red-600" />
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">45</div>
+                <div className="text-2xl font-bold text-gray-900">{loading ? '…' : (accStats?.totalAccouchements ?? 0)}</div>
                 <div className="text-sm text-gray-500">Accouchements</div>
               </div>
             </div>
@@ -148,7 +196,7 @@ export default function Dashboard() {
                 <Heart className="w-6 h-6 text-purple-600" />
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">12</div>
+                <div className="text-2xl font-bold text-gray-900">{loading ? '…' : (patientStats?.totalPatients ?? 0)}</div>
                 <div className="text-sm text-gray-500">Urgences</div>
               </div>
             </div>
@@ -163,56 +211,6 @@ export default function Dashboard() {
         </div>
 
         
-        {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-sm text-gray-600 mb-1">Rendez-vous</div>
-            <div className="text-2xl font-bold text-blue-600">639</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserCheck className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-sm text-gray-600 mb-1">Sage-femmes</div>
-            <div className="text-2xl font-bold text-blue-600">83</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-sm text-gray-600 mb-1">Personnel</div>
-            <div className="text-2xl font-bold text-blue-600">296</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-sm text-gray-600 mb-1">Consultations</div>
-            <div className="text-2xl font-bold text-blue-600">49</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-sm text-gray-600 mb-1">Suivis</div>
-            <div className="text-2xl font-bold text-blue-600">372</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-gray-100">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-sm text-gray-600 mb-1">Naissances</div>
-            <div className="text-2xl font-bold text-blue-600">253</div>
-          </div>
-        </div> */}
-
         {/* Tableau des prochaines CPN */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="p-6 border-b border-gray-100">
@@ -239,111 +237,47 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                        AH
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">Mme Afiavi HOUNSA</div>
-                        <div className="text-sm text-gray-500">ID: #001</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CPN - 2ème trimestre</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20 Juin 2025</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">09:30</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Confirmé
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-medium">
-                        BA
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">Mme Blandine AGOSSOU</div>
-                        <div className="text-sm text-gray-500">ID: #002</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CPN - 1er trimestre</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">21 Juin 2025</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10:15</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                      En attente
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium">
-                        CB
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">Mme Colette BOCOVO</div>
-                        <div className="text-sm text-gray-500">ID: #003</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Suivi post-accouchement</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">22 Juin 2025</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">14:00</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Confirmé
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-medium">
-                        DL
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">Mme Danielle LOKONON</div>
-                        <div className="text-sm text-gray-500">ID: #004</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CPN - 3ème trimestre</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">23 Juin 2025</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">11:30</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Confirmé
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-medium">
-                        EK
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">Mme Estelle KOUDJO</div>
-                        <div className="text-sm text-gray-500">ID: #005</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CPN - 2ème trimestre</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">24 Juin 2025</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15:45</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                      En attente
-                    </span>
-                  </td>
-                </tr>
+                {loading && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">Chargement…</td>
+                  </tr>
+                )}
+                {!loading && upcoming.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">Aucune CPN à venir</td>
+                  </tr>
+                )}
+                {!loading && upcoming.slice(0, 5).map((item) => {
+                  const nom = item.patient?.nom || '';
+                  const prenom = item.patient?.prenom || '';
+                  const initials = `${(prenom[0]||'').toUpperCase()}${(nom[0]||'').toUpperCase()}` || 'PN';
+                  const dateStr = item.rdv ? new Date(item.rdv).toLocaleDateString('fr-FR') : '—';
+                  const statut = item.status;
+                  const badgeClass = statut === 'Planifié' ? 'bg-yellow-100 text-yellow-800' : (statut === 'En attente' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800');
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                            {initials}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{`Mme ${prenom} ${nom}`.trim()}</div>
+                            <div className="text-sm text-gray-500">ID: {item.patient?.patientId || '—'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CPN</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dateStr}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">—</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${badgeClass}`}>
+                          {statut}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

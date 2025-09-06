@@ -1,7 +1,9 @@
 "use client";
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import AddPregnantWomanModal from '@/components/AddPregnantWomanModal';
+import { usePatiente } from '@/hooks/patientes';
 import { 
   Search, 
   Filter, 
@@ -15,7 +17,9 @@ import {
   Heart,
   AlertCircle,
   MoreVertical,
-  Plus
+  Plus,
+  Users,
+  Activity
 } from 'lucide-react';
 
 export default function PatientsPage() {
@@ -24,78 +28,77 @@ export default function PatientsPage() {
     const [showFilters, setShowFilters] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editingPatient, setEditingPatient] = useState(null);
     const [activeFilter, setActiveFilter] = useState('Toutes');
     const [currentPage, setCurrentPage] = useState(1);
+    const [stats, setStats] = useState(null);
+    const [refreshData, setRefreshData] = useState(0);
     const itemsPerPage = 3;
+    
+    const { getPatientsWithDetails, getPatientStats, addPatient, updatePatient, loading } = usePatiente();
 
-    // Sample data for patients
-    const [patients, setPatients] = useState([
-        {
-            id: 'PT001',
-            name: 'Afiavi HOUNSA',
-            age: 28,
-            gestationalAge: '24 semaines',
-            lastVisit: '2025-06-01',
-            nextVisit: '2025-06-20',
-            status: 'Normal',
-            phone: '97123456',
-            adresse: 'Cotonou, Zogbo',
-            avatar: 'AH',
-            color: 'bg-blue-100 text-blue-600'
-        },
-        {
-            id: 'PT002',
-            name: 'Blandine AGOSSOU',
-            age: 32,
-            gestationalAge: '12 semaines',
-            lastVisit: '2025-06-05',
-            nextVisit: '2025-06-21',
-            status: 'À surveiller',
-            phone: '95789012',
-            adresse: 'Porto-Novo, Ouando',
-            avatar: 'BA',
-            color: 'bg-pink-100 text-pink-600'
-        },
-        {
-            id: 'PT003',
-            name: 'Colette BOCOVO',
-            age: 24,
-            gestationalAge: 'Post-partum',
-            lastVisit: '2025-06-10',
-            nextVisit: '2025-06-22',
-            status: 'Normal',
-            phone: '96234567',
-            adresse: 'Abomey-Calavi, Tankpè',
-            avatar: 'CB',
-            color: 'bg-green-100 text-green-600'
-        },
-        {
-            id: 'PT004',
-            name: 'Danielle LOKONON',
-            age: 30,
-            gestationalAge: '34 semaines',
-            lastVisit: '2025-06-12',
-            nextVisit: '2025-06-23',
-            status: 'À risque',
-            phone: '94567890',
-            adresse: 'Cotonou, Fidjrossè',
-            avatar: 'DL',
-            color: 'bg-purple-100 text-purple-600'
-        },
-        {
-            id: 'PT005',
-            name: 'Edwige DANSOU',
-            age: 26,
-            gestationalAge: '18 semaines',
-            lastVisit: '2025-06-14',
-            nextVisit: '2025-06-28',
-            status: 'Normal',
-            phone: '99876543',
-            adresse: 'Ouidah, Centre-ville',
-            avatar: 'ED',
-            color: 'bg-orange-100 text-orange-600'
-        }
-    ]);
+    const [patients, setPatients] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // Load patients and stats
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const [patientsResult, statsResult] = await Promise.all([
+                    getPatientsWithDetails(),
+                    getPatientStats()
+                ]);
+                
+                if (patientsResult.success && patientsResult.patients) {
+                    const transformedPatients = patientsResult.patients.map(patient => ({
+                        id: patient.patientId,
+                        name: `${patient.prenom || ''} ${patient.nom || ''}`.trim(),
+                        age: patient.age || 'N/A',
+                        phone: patient.telephone || 'N/A',
+                        adresse: patient.adresse || 'N/A',
+                        nextVisit: patient.prochainRdv || 'Non planifié',
+                        status: 'Normal', // Default status
+                        gestationalAge: 'À renseigner',
+                        lastVisit: '',
+                        avatar: `${(patient.prenom || 'P').charAt(0)}${(patient.nom || 'P').charAt(0)}`,
+                        color: getRandomColor(),
+                        // Keep original data for editing
+                        originalData: patient
+                    }));
+                    setPatients(transformedPatients);
+                }
+                
+                if (statsResult.success) {
+                    setStats(statsResult.stats);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        loadData();
+    }, [refreshData]); // Removed function dependencies to prevent infinite loop
+
+    // Generate random color for avatar
+    const getRandomColor = () => {
+        const colors = [
+            'bg-blue-100 text-blue-600',
+            'bg-pink-100 text-pink-600',
+            'bg-green-100 text-green-600',
+            'bg-purple-100 text-purple-600',
+            'bg-orange-100 text-orange-600',
+            'bg-indigo-100 text-indigo-600',
+            'bg-red-100 text-red-600',
+            'bg-yellow-100 text-yellow-600'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    };
+    
+    // Use fallback data if no patients loaded
+    const displayPatients = patients.length > 0 ? patients : [];
 
     const filters = ['Toutes', 'Normal', 'À surveiller', 'À risque', 'Post-partum'];
 
@@ -120,7 +123,7 @@ export default function PatientsPage() {
     };
 
     // Filter the patients based on search term and active filter
-    const filteredPatients = patients.filter(patient => {
+    const filteredPatients = displayPatients.filter(patient => {
         const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             patient.id.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter = activeFilter === 'Toutes' || patient.status === activeFilter;
@@ -142,38 +145,110 @@ export default function PatientsPage() {
         setSearchTerm(term);
         setCurrentPage(1);
     };
-    const handleAddPregnantWoman = (newPatient) => {
-        setPatients([
-            ...patients,
-            {
-                id: `PT${(patients.length + 1).toString().padStart(3, '0')}`,
-                name: `${newPatient.prenom} ${newPatient.nom}`,
-                age: newPatient.age,
-                gestationalAge: 'À renseigner',
-                lastVisit: '',
-                nextVisit: '',
-                status: 'Normal',
-                phone: newPatient.telephone,
-                adresse: newPatient.adresse,
-                avatar: `${newPatient.prenom.charAt(0)}${newPatient.nom.charAt(0)}`,
-                color: 'bg-gray-100 text-gray-600'
+    // Handle add patient
+    const handleAddPatient = async (patientData) => {
+        try {
+            const result = await addPatient(patientData);
+            if (result.success) {
+                setRefreshData(prev => prev + 1); // Refresh data
+                alert('Patiente ajoutée avec succès!');
+            } else {
+                throw new Error(result.error?.message || 'Erreur lors de l\'ajout');
             }
-        ]);
+        } catch (error) {
+            console.error('Erreur lors de l\'ajout:', error);
+            throw error;
+        }
+    };
+
+    // Handle edit patient
+    const handleEditPatient = async (patientData) => {
+        try {
+            const result = await updatePatient(
+                patientData.patientId,
+                patientData.personneId,
+                patientData
+            );
+            if (result.success) {
+                setRefreshData(prev => prev + 1); // Refresh data
+                setEditingPatient(null);
+                alert('Patiente modifiée avec succès!');
+            } else {
+                throw new Error(result.error?.message || 'Erreur lors de la modification');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la modification:', error);
+            throw error;
+        }
+    };
+
+    // Handle edit button click
+    const handleEditClick = (patient) => {
+        if (patient.originalData) {
+            setEditingPatient({
+                ...patient.originalData,
+                patientId: patient.originalData.patientId,
+                personneId: patient.originalData.personneId
+            });
+            setShowAddModal(true);
+        }
     };
 
     return (
         <DashboardLayout title="Gestion des Patientes">
             <div className="p-6 space-y-6">
-                {/* Statistics Cards - Moved to top */}
+                {/* Statistics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center">
                             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <UserPlus className="w-6 h-6 text-blue-600" />
+                                <Users className="w-6 h-6 text-blue-600" />
                             </div>
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Total Patientes</p>
-                                <p className="text-2xl font-bold text-gray-900">{patients.length}</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.totalPatients || displayPatients.length}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex items-center">
+                            <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
+                                <Baby className="w-6 h-6 text-pink-600" />
+                            </div>
+                            <div className="ml-4">
+                                <p className="text-sm text-gray-600">Grossesses actives</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.activePregnancies || '0'}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex items-center">
+                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                <Calendar className="w-6 h-6 text-orange-600" />
+                            </div>
+                            <div className="ml-4">
+                                <p className="text-sm text-gray-600">RDV à venir</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.upcomingAppointments || '0'}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -181,41 +256,17 @@ export default function PatientsPage() {
                     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                         <div className="flex items-center">
                             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <Heart className="w-6 h-6 text-green-600" />
+                                <Activity className="w-6 h-6 text-green-600" />
                             </div>
                             <div className="ml-4">
-                                <p className="text-sm text-gray-600">Statut Normal</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {patients.filter(p => p.status === 'Normal').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-yellow-600" />
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm text-gray-600">À Surveiller</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {patients.filter(p => p.status === 'À surveiller').length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center">
-                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-red-600" />
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm text-gray-600">À Risque</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {patients.filter(p => p.status === 'À risque').length}
-                                </p>
+                                <p className="text-sm text-gray-600">CPN ce mois</p>
+                                {isLoading ? (
+                                    <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+                                ) : (
+                                    <p className="text-2xl font-bold text-gray-900">
+                                        {stats?.cpnThisMonth || '0'}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -292,8 +343,22 @@ export default function PatientsPage() {
                                 </div>
                                 
                                 <div className="relative">
-                                    <button className="p-1 text-gray-400 hover:text-gray-600">
-                                        <MoreVertical className="w-4 h-4" />
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Edit clicked for patient:', patient);
+                                            // Pass the original data with the correct field names for the modal
+                                            const editData = {
+                                                ...patient.originalData,
+                                                patientId: patient.id,
+                                                personneId: patient.originalData.personneId
+                                            };
+                                            setEditingPatient(editData);
+                                        }}
+                                        className="text-blue-600 hover:text-blue-900 p-1 rounded-lg hover:bg-blue-50 transition-colors"
+                                        title="Modifier la patiente"
+                                    >
+                                        <Edit className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -330,20 +395,21 @@ export default function PatientsPage() {
                             </div>
 
                             {/* Next Appointment */}
-                            {patient.nextVisit && (
-                                <div className="mt-4 pt-4 border-t border-gray-100">
-                                    <div className="flex items-center text-sm">
-                                        <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-                                        <span className="text-gray-600">Prochaine CPN:</span>
-                                        <span className="ml-2 font-medium text-blue-600">
-                                            {new Date(patient.nextVisit).toLocaleDateString('fr-FR')}
-                                        </span>
-                                    </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex items-center text-sm">
+                                    <Calendar className="w-4 h-4 mr-2 text-blue-500" />
+                                    <span className="text-gray-600">Prochaine CPN:</span>
+                                    <span className="ml-2 font-medium text-blue-600">
+                                        {patient.nextVisit && patient.nextVisit !== 'Non planifié' && patient.nextVisit !== 'null' && patient.nextVisit !== null
+                                            ? new Date(patient.nextVisit).toLocaleDateString('fr-FR')
+                                            : 'Aucun'
+                                        }
+                                    </span>
                                 </div>
-                            )}
+                            </div>
 
                             {/* Action Buttons */}
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex">
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -354,7 +420,7 @@ export default function PatientsPage() {
                                     <Eye className="w-4 h-4 mr-1" />
                                     Voir
                                 </button>
-                                <button
+                                {/* <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         // Handle edit
@@ -363,7 +429,7 @@ export default function PatientsPage() {
                                 >
                                     <Edit className="w-4 h-4 mr-1" />
                                     Modifier
-                                </button>
+                                </button> */}
                             </div>
                         </div>
                     ))}
@@ -412,10 +478,10 @@ export default function PatientsPage() {
                 )}
 
                 {/* Empty State */}
-                {filteredPatients.length === 0 && (
+                {filteredPatients.length === 0 && !loading && (
                     <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <UserPlus className="w-8 h-8 text-gray-400" />
+                            <Baby className="w-8 h-8 text-gray-400" />
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune patiente trouvée</h3>
                         <p className="text-gray-500 mb-6">
@@ -430,9 +496,29 @@ export default function PatientsPage() {
                         </button>
                     </div>
                 )}
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Chargement des patientes...</p>
+                    </div>
+                )}
             </div>
 
-            {/* Modal de détail patiente (mock) */}
+            {/* Add/Edit Patient Modal */}
+            <AddPregnantWomanModal
+                open={showAddModal || !!editingPatient}
+                onClose={() => {
+                    setShowAddModal(false);
+                    setEditingPatient(null);
+                }}
+                onAdd={editingPatient ? handleEditPatient : handleAddPatient}
+                editData={editingPatient}
+                isEditing={!!editingPatient}
+            />
+
+            {/* Modal de détail patiente */}
             {selectedPatient && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">

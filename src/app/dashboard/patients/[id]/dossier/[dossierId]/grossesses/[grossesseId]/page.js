@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDossier } from '@/hooks/dossier';
+import { usePatiente } from '@/hooks/patientes';
 import ConsultationModal from "@/components/ui/ConsultationModal";
 import AccouchementModal from "@/components/ui/AccouchementModal";
 import AddConsultationModal from "@/components/ui/AddConsultationModal";
@@ -12,149 +14,75 @@ import Timeline from '@/components/ui/Timeline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faPlus } from '@fortawesome/free-solid-svg-icons';
 
-// Mock local pour la grossesse, consultations et accouchement
-const mockGrossesses = [
-    {
-        id: 'G001',
-        id_dossier: 'DM001',
-        statut: 'En cours',
-        annee: 2025,
-        consultations: [
-            {
-                id: 11,
-                id_grossesse: 1,
-                date_consultation: '2025-03-15',
-                nom_medecin: 'Dr. A. Houngbédji',
-                nom_sage_femme: 'Mme K. Dossou',
-                terme: 12,
-                age_gest: 28,
-                sexe_enceinte: 'F',
-                RDV: '2025-04-10'
-            },
-            {
-                id: 12,
-                id_grossesse: 1,
-                date_consultation: '2025-05-10',
-                nom_medecin: 'Dr. A. Houngbédji',
-                nom_sage_femme: 'Mme K. Dossou',
-                terme: 18,
-                age_gest: 28,
-                sexe_enceinte: 'F',
-                RDV: '2025-06-10'
-            }
-        ],
-        accouchement: {
-            id: 'A002',
-            id_dossier_maternite: 'DM002',
-            nbr_enfant: 1,
-            enfants: [
-                {
-                    nom_accouche: 'Agbo',
-                    prenom_accouche: 'Clarisse',
-                    nom_mari: 'Dossou',
-                    prenom_mari: 'Paul',
-                    sexe_accouche: 'F',
-                    poids: '3.0kg',
-                    note: 'Bébé en bonne santé'
-                }
-            ],
-            nom_accouche: 'Agbo',
-            prenom_accouche: 'Clarisse',
-            nom_mari: 'Dossou',
-            prenom_mari: 'Paul',
-            heure_admission: '09:15',
-            date_admission: '2023-05-12',
-            heure_accouchement: '13:10',
-            date_accouchement: '2023-05-13',
-            mode_accouchement: 'Voie basse',
-            sexe_accouche: '',
-            poids: '',
-            note: '',
-            etat_sortie: 'Mère et bébé en bonne santé'
-        }
-    },
-    {
-        id: 'G002',
-        id_dossier: 'DM001',
-        statut: 'Terminée',
-        annee: 2023,
-        consultations: [
-            {
-                id: 21,
-                id_grossesse: 2,
-                date_consultation: '2023-01-10',
-                nom_medecin: 'Dr. S. Kpogan',
-                nom_sage_femme: 'Mme T. Gnonlonfoun',
-                terme: 14,
-                age_gest: 29,
-                sexe_enceinte: 'F',
-                RDV: '2023-02-10'
-            }
-        ],
-        accouchement: {
-            id: 'A001',
-            id_dossier_maternite: 'DM001',
-            nbr_enfant: 2,
-            enfants: [
-                {
-                    nom_accouche: 'Kpogan',
-                    prenom_accouche: 'Sophie',
-                    nom_mari: 'Azon',
-                    prenom_mari: 'Jean',
-                    sexe_accouche: 'F',
-                    poids: '2.8kg',
-                    note: 'Bébé en bonne santé'
-                },
-                {
-                    nom_accouche: 'Kpogan',
-                    prenom_accouche: 'Sophie',
-                    nom_mari: 'Azon',
-                    prenom_mari: 'Jean',
-                    sexe_accouche: 'M',
-                    poids: '2.6kg',
-                    note: 'Bébé en observation'
-                }
-            ],
-            nom_accouche: 'Kpogan',
-            prenom_accouche: 'Sophie',
-            nom_mari: 'Azon',
-            prenom_mari: 'Jean',
-            heure_admission: '08:00',
-            date_admission: '2023-07-04',
-            heure_accouchement: '11:30',
-            date_accouchement: '2023-07-07',
-            mode_accouchement: 'Césarienne',
-            sexe_accouche: '',
-            poids: '',
-            note: '',
-            etat_sortie: 'Mère et jumeaux en bonne santé'
-        }
-    }
-];
+// Les données sont désormais chargées via Firestore (useDossier)
 
 export default function GrossesseDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { id, dossierId, grossesseId } = params;
 
+    const { getGrossesseDetails } = useDossier();
+    const { addCpn, addChildbirth } = usePatiente();
     const [consultationModalOpen, setConsultationModalOpen] = useState(false);
     const [selectedConsultation, setSelectedConsultation] = useState(null);
     const [accouchementModalOpen, setAccouchementModalOpen] = useState(false);
     const [addConsultationOpen, setAddConsultationOpen] = useState(false);
     const [addAccouchementOpen, setAddAccouchementOpen] = useState(false);
-    const [grossesseState, setGrossesseState] = useState(() => {
-        const found = mockGrossesses.find(g => g.id === grossesseId);
-        return found ? { ...found } : null;
-    });
+    const [grossesseState, setGrossesseState] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Recherche de la grossesse dans le mock
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await getGrossesseDetails(dossierId, grossesseId);
+                if (!mounted) return;
+                if (res.success) {
+                    setGrossesseState(res.grossesse);
+                    setError(null);
+                } else {
+                    setError(res.error || new Error('Grossesse introuvable'));
+                }
+            } catch (e) {
+                if (mounted) setError(e);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [dossierId, grossesseId]);
+
+    const refresh = async () => {
+        setLoading(true);
+        const res = await getGrossesseDetails(dossierId, grossesseId);
+        if (res.success) {
+            setGrossesseState(res.grossesse);
+            setError(null);
+        } else {
+            setError(res.error || new Error('Grossesse introuvable'));
+        }
+        setLoading(false);
+    };
+
     const grossesse = grossesseState;
 
-    if (!grossesse) {
+    if (loading) {
         return (
             <DashboardLayout>
                 <div className="p-8 text-center">
-                    <p className="text-lg text-red-600 font-semibold">Grossesse introuvable</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-gray-600">Chargement de la grossesse...</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (!grossesse || error) {
+        return (
+            <DashboardLayout>
+                <div className="p-8 text-center">
+                    <p className="text-lg text-red-600 font-semibold">{error ? (error.message || 'Erreur lors du chargement') : 'Grossesse introuvable'}</p>
                     <Button className="mt-4" onClick={() => router.back()} icon={<FontAwesomeIcon icon={faArrowLeft} />}>Retour</Button>
                 </div>
             </DashboardLayout>
@@ -197,15 +125,27 @@ export default function GrossesseDetailPage() {
                             <AddConsultationModal
                                 open={addConsultationOpen}
                                 onClose={() => setAddConsultationOpen(false)}
-                                onAdd={(newConsultation) => {
-                                    setGrossesseState(g => ({
-                                        ...g,
-                                        consultations: [...g.consultations, {
-                                            ...newConsultation,
-                                            id: Date.now(),
-                                            id_grossesse: grossesseId
-                                        }]
-                                    }));
+                                onAdd={async (form) => {
+                                    // Mapper les noms de champs pour correspondre à addCpn
+                                    const payload = {
+                                        dormirsurmild: !!form.dormirsurmild,
+                                        sulphadoxine: form.sulfadoxine ?? form.sp_nbr ?? '',
+                                        mebendazole: form.mebendazole ?? form.meben ?? '',
+                                        ferfoldine: form.ferfoldine ?? form.fer_foldine ?? '',
+                                        vat: form.vat ?? '',
+                                        garedepiste: !!form.garedepiste ?? !!form.gare_depiste,
+                                        garerefere: !!form.garerefere ?? !!form.gare_refere,
+                                        diagnostique: form.diagnostique ?? form.diagnostique_associe ?? '',
+                                        conduiteTenue: form.conduiteTenue ?? form.conduite_tenue ?? '',
+                                        rdv: form.RDV,
+                                    };
+                                    const res = await addCpn(grossesseId, payload);
+                                    if (res.success) {
+                                        await refresh();
+                                        setAddConsultationOpen(false);
+                                    } else {
+                                        alert(res.error?.message || 'Erreur lors de la création de la consultation');
+                                    }
                                 }}
                             />
                         </div>
@@ -241,75 +181,93 @@ export default function GrossesseDetailPage() {
 
 
                     {/* Accouchement lié à la grossesse */}
-                    {grossesse.accouchement && (
-                        <>
-                        <div className="bg-white rounded-xl shadow p-6 mb-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-base font-bold text-primary">Accouchement</h2>
-                                {!(grossesse.statut?.toLowerCase() === 'terminée') && (
-                                        <Button
-                                            className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                            icon={<FontAwesomeIcon icon={faPlus} />} 
-                                            onClick={() => setAddAccouchementOpen(true)}
-                                        >
-                                            Ajouter accouchement
-                                        </Button>
-                                    )}
-                                    <AddAccouchementModal
-                                        open={addAccouchementOpen}
-                                        onClose={() => setAddAccouchementOpen(false)}
-                                        onAdd={(newAccouchement) => {
-                                            setGrossesseState(g => ({
-                                                ...g,
-                                                accouchement: {
-                                                    ...newAccouchement,
-                                                    id: Date.now(),
-                                                    id_dossier_maternite: g.id_dossier
-                                                }
-                                            }));
-                                        }}
-                                    />
-                            </div>
-                            <div className="flex flex-col gap-2 text-sm text-gray-700">
-                                <div><span className="font-semibold">Nombre d&apos;enfants :</span> {grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')}</div>
-                                {Array.isArray(grossesse.accouchement.enfants) && grossesse.accouchement.enfants.length > 0 ? (
-                                    grossesse.accouchement.enfants.map((enfant, idx) => (
-                                        <div key={idx} className="pl-2 border-l-2 border-blue-100 mb-2">
-                                            <div><span className="font-semibold">Bébé {idx + 1}</span></div>
-                                            <div><span className="font-semibold">Nom accouche :</span> {enfant.nom_accouche ?? '-'}</div>
-                                            <div><span className="font-semibold">Prénom accouche :</span> {enfant.prenom_accouche ?? '-'}</div>
-                                            <div><span className="font-semibold">Nom mari :</span> {enfant.nom_mari ?? '-'}</div>
-                                            <div><span className="font-semibold">Prénom mari :</span> {enfant.prenom_mari ?? '-'}</div>
-                                            <div><span className="font-semibold">Sexe :</span> {enfant.sexe_accouche ?? '-'}</div>
-                                            <div><span className="font-semibold">Poids :</span> {enfant.poids ?? '-'}</div>
-                                            <div><span className="font-semibold">Note :</span> {enfant.note ?? '-'}</div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <>
-                                        <div><span className="font-semibold">Nom accouche :</span> {grossesse.accouchement.nom_accouche ?? '-'}</div>
-                                        <div><span className="font-semibold">Prénom accouche :</span> {grossesse.accouchement.prenom_accouche ?? '-'}</div>
-                                        <div><span className="font-semibold">Nom mari :</span> {grossesse.accouchement.nom_mari ?? '-'}</div>
-                                        <div><span className="font-semibold">Prénom mari :</span> {grossesse.accouchement.prenom_mari ?? '-'}</div>
-                                        <div><span className="font-semibold">Sexe :</span> {grossesse.accouchement.sexe_accouche ?? '-'}</div>
-                                        <div><span className="font-semibold">Poids :</span> {grossesse.accouchement.poids ?? '-'}</div>
-                                        <div><span className="font-semibold">Note :</span> {grossesse.accouchement.note ?? '-'}</div>
-                                    </>
-                                )}
-                                <div><span className="font-semibold">Heure admission :</span> {grossesse.accouchement.heure_admission ?? '-'}</div>
-                                <div><span className="font-semibold">Date admission :</span> {grossesse.accouchement.date_admission ? new Date(grossesse.accouchement.date_admission).toLocaleDateString('fr-FR') : '-'}</div>
-                                <div><span className="font-semibold">Heure accouchement :</span> {grossesse.accouchement.heure_accouchement ?? '-'}</div>
-                                <div><span className="font-semibold">Date accouchement :</span> {grossesse.accouchement.date_accouchement ? new Date(grossesse.accouchement.date_accouchement).toLocaleDateString('fr-FR') : '-'}</div>
-                                <div><span className="font-semibold">Mode accouchement :</span> {grossesse.accouchement.mode_accouchement ?? '-'}</div>
-                            </div>
-                            <AccouchementModal
-                                open={accouchementModalOpen}
-                                onClose={() => setAccouchementModalOpen(false)}
-                                accouchement={grossesse.accouchement}
+                    <div className="bg-white rounded-xl shadow p-6 mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-base font-bold text-primary">Accouchement</h2>
+                            {!(grossesse.statut?.toLowerCase() === 'terminée') && (
+                                <Button
+                                    className="ml-2 px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                    icon={<FontAwesomeIcon icon={faPlus} />} 
+                                    onClick={() => setAddAccouchementOpen(true)}
+                                >
+                                    Ajouter accouchement
+                                </Button>
+                            )}
+                            <AddAccouchementModal
+                                open={addAccouchementOpen}
+                                onClose={() => setAddAccouchementOpen(false)}
+                                onAdd={async (form) => {
+                                    // addChildbirth attend enfants: [{nomEnfant, prenomEnfant, sexe, poids}], et autres champs
+                                    const payload = {
+                                        nomMari: form.nomMari,
+                                        prenomMari: form.prenomMari,
+                                        heureAdmission: form.heureAdmission,
+                                        dateAdmission: form.dateAdmission,
+                                        heureAccouchement: form.heureAccouchement,
+                                        dateAccouchement: form.dateAccouchement,
+                                        modeAccouchement: form.modeAccouchement,
+                                        note: form.note,
+                                        enfants: Array.isArray(form.enfants) ? form.enfants.map(e => ({
+                                            nomEnfant: e.nomEnfant,
+                                            prenomEnfant: e.prenomEnfant,
+                                            sexe: e.sexe,
+                                            poids: e.poids,
+                                        })) : [],
+                                    };
+                                    const res = await addChildbirth(grossesseId, payload);
+                                    if (res.success) {
+                                        await refresh();
+                                        setAddAccouchementOpen(false);
+                                    } else {
+                                        alert(res.error?.message || "Erreur lors de l'ajout de l'accouchement");
+                                    }
+                                }}
                             />
                         </div>
-                        </>
-                    )}
+                        {grossesse.accouchement ? (
+                            <>
+                                <div className="flex flex-col gap-2 text-sm text-gray-700">
+                                    <div><span className="font-semibold">Nombre d&apos;enfants :</span> {grossesse.accouchement.nbr_enfant ?? (grossesse.accouchement.enfants ? grossesse.accouchement.enfants.length : '-')}</div>
+                                    {Array.isArray(grossesse.accouchement.enfants) && grossesse.accouchement.enfants.length > 0 ? (
+                                        grossesse.accouchement.enfants.map((enfant, idx) => (
+                                            <div key={idx} className="pl-2 border-l-2 border-blue-100 mb-2">
+                                                <div><span className="font-semibold">Bébé {idx + 1}</span></div>
+                                                <div><span className="font-semibold">Nom accouche :</span> {enfant.nom_accouche ?? '-'}</div>
+                                                <div><span className="font-semibold">Prénom accouche :</span> {enfant.prenom_accouche ?? '-'}</div>
+                                                <div><span className="font-semibold">Nom mari :</span> {enfant.nom_mari ?? '-'}</div>
+                                                <div><span className="font-semibold">Prénom mari :</span> {enfant.prenom_mari ?? '-'}</div>
+                                                <div><span className="font-semibold">Sexe :</span> {enfant.sexe_accouche ?? '-'}</div>
+                                                <div><span className="font-semibold">Poids :</span> {enfant.poids ?? '-'}</div>
+                                                <div><span className="font-semibold">Note :</span> {enfant.note ?? '-'}</div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <div><span className="font-semibold">Nom accouche :</span> {grossesse.accouchement.nom_accouche ?? '-'}</div>
+                                            <div><span className="font-semibold">Prénom accouche :</span> {grossesse.accouchement.prenom_accouche ?? '-'}</div>
+                                            <div><span className="font-semibold">Nom mari :</span> {grossesse.accouchement.nom_mari ?? '-'}</div>
+                                            <div><span className="font-semibold">Prénom mari :</span> {grossesse.accouchement.prenom_mari ?? '-'}</div>
+                                            <div><span className="font-semibold">Sexe :</span> {grossesse.accouchement.sexe_accouche ?? '-'}</div>
+                                            <div><span className="font-semibold">Poids :</span> {grossesse.accouchement.poids ?? '-'}</div>
+                                            <div><span className="font-semibold">Note :</span> {grossesse.accouchement.note ?? '-'}</div>
+                                        </>
+                                    )}
+                                    <div><span className="font-semibold">Heure admission :</span> {grossesse.accouchement.heure_admission ?? '-'}</div>
+                                    <div><span className="font-semibold">Date admission :</span> {grossesse.accouchement.date_admission ? new Date(grossesse.accouchement.date_admission).toLocaleDateString('fr-FR') : '-'}</div>
+                                    <div><span className="font-semibold">Heure accouchement :</span> {grossesse.accouchement.heure_accouchement ?? '-'}</div>
+                                    <div><span className="font-semibold">Date accouchement :</span> {grossesse.accouchement.date_accouchement ? new Date(grossesse.accouchement.date_accouchement).toLocaleDateString('fr-FR') : '-'}</div>
+                                    <div><span className="font-semibold">Mode accouchement :</span> {grossesse.accouchement.mode_accouchement ?? '-'}</div>
+                                </div>
+                                <AccouchementModal
+                                    open={accouchementModalOpen}
+                                    onClose={() => setAccouchementModalOpen(false)}
+                                    accouchement={grossesse.accouchement}
+                                />
+                            </>
+                        ) : (
+                            <div className="text-xs text-gray-500">Aucun accouchement enregistré</div>
+                        )}
+                    </div>
 
                     {/* Bloc Observations générales */}
                     {grossesse.observations && grossesse.observations !== '' && (

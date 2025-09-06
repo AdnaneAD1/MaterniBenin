@@ -1,14 +1,23 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Eye, EyeOff, Baby } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Button  from '@/components/ui/Button';
+import { useAuth } from '@/hooks/auth';
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [typedText, setTypedText] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fullText = "Bienvenue dans l'espace professionnel des sage-femmes";
+  
+  const { login, loading, error, currentUser } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     let index = 0;
@@ -23,6 +32,30 @@ export default function Login() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Rediriger si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (currentUser) {
+      router.push('/dashboard');
+    }
+  }, [currentUser, router]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await login(email, password);
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Erreur de connexion:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black relative p-4 lg:p-8">
@@ -63,7 +96,7 @@ export default function Login() {
               </div>
 
               {/* Form */}
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 {/* Email Field */}
                 <div>
                   <label htmlFor="email" className="block text-base font-medium text-gray-700 mb-3">
@@ -72,8 +105,11 @@ export default function Login() {
                   <Input
                     id="email"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Entrez votre adresse email"
                     className="w-full h-14 border border-gray-200 rounded-xl px-4 focus:ring-2 focus:ring-[#1E88E5] focus:border-transparent bg-gray-50 text-base"
+                    required
                   />
                 </div>
 
@@ -86,8 +122,11 @@ export default function Login() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="w-full h-14 border border-gray-200 rounded-xl px-4 pr-12 focus:ring-2 focus:ring-[#1E88E5] focus:border-transparent bg-gray-50 text-base"
+                      required
                     />
                     <button
                       type="button"
@@ -110,14 +149,27 @@ export default function Login() {
                   </Link>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+                    {error}
+                  </div>
+                )}
+
                 {/* Login Button */}
-                <Button className="w-full h-14 bg-[#1E88E5] hover:bg-[#1565C0] text-white font-semibold rounded-xl transition-colors duration-200 mt-8 text-base">
-                <Link
-                                href="/dashboard"
-                                
-                            >
-                                Se connecter
-                            </Link>
+                <Button 
+                  type="submit"
+                  disabled={isSubmitting || loading || !email || !password}
+                  className="w-full h-14 bg-[#1E88E5] hover:bg-[#1565C0] text-white font-semibold rounded-xl transition-colors duration-200 mt-8 text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isSubmitting || loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Connexion...
+                    </>
+                  ) : (
+                    'Se connecter'
+                  )}
                 </Button>
 
                 {/* Sign Up Link */}

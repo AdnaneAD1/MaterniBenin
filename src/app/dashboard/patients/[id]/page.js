@@ -5,75 +5,52 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Button from '@/components/ui/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import { useMemo } from "react";
-
-// Mocks locaux pour suppression facile
-const mockPatients = [
-    {
-        id: 'PT001',
-        name: 'Afiavi HOUNSA',
-        age: 28,
-        gestationalAge: '24 semaines',
-        lastVisit: '2025-06-01',
-        nextVisit: '2025-06-20',
-        status: 'Normal',
-        phone: '97123456'
-    },
-    {
-        id: 'PT002',
-        name: 'Blandine AGOSSOU',
-        age: 32,
-        gestationalAge: '12 semaines',
-        lastVisit: '2025-06-05',
-        nextVisit: '2025-06-21',
-        status: 'À surveiller',
-        phone: '95789012'
-    },
-    {
-        id: 'PT003',
-        name: 'Colette BOCOVO',
-        age: 24,
-        gestationalAge: 'Post-partum',
-        lastVisit: '2025-06-10',
-        nextVisit: '2025-06-22',
-        status: 'Normal',
-        phone: '96234567'
-    },
-    {
-        id: 'PT004',
-        name: 'Danielle LOKONON',
-        age: 30,
-        gestationalAge: '34 semaines',
-        lastVisit: '2025-06-12',
-        nextVisit: '2025-06-23',
-        status: 'À risque',
-        phone: '94567890'
-    },
-    {
-        id: 'PT005',
-        name: 'Edwige DANSOU',
-        age: 26,
-        gestationalAge: '18 semaines',
-        lastVisit: '2025-06-14',
-        nextVisit: '2025-06-28',
-        status: 'Normal',
-        phone: '99876543'
-    }
-];
+import { useEffect, useState } from "react";
+import { usePatiente } from '@/hooks/patientes';
 
 export default function PatientDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { id } = params;
 
-    // Recherche du patient dans le mock
-    const patient = useMemo(() => mockPatients.find(p => p.id === id), [id]);
+    const { getPatientDetails } = usePatiente();
+    const [patient, setPatient] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    if (!patient) {
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await getPatientDetails(id);
+                if (!mounted) return;
+                if (res.success) setPatient(res.patient);
+                else setError(res.error || new Error('Patiente introuvable'));
+            } catch (e) {
+                if (mounted) setError(e);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [id, getPatientDetails]);
+
+    if (loading) {
         return (
             <DashboardLayout>
                 <div className="p-8 text-center">
-                    <p className="text-lg text-red-600 font-semibold">Patiente introuvable</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-gray-600">Chargement de la patiente...</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (!patient || error) {
+        return (
+            <DashboardLayout>
+                <div className="p-8 text-center">
+                    <p className="text-lg text-red-600 font-semibold">{error ? (error.message || 'Erreur lors du chargement') : 'Patiente introuvable'}</p>
                     <Button className="mt-4" onClick={() => router.back()} icon={<FontAwesomeIcon icon={faArrowLeft} />}>
                         Retour
                     </Button>
@@ -111,13 +88,14 @@ export default function PatientDetailPage() {
                         </div>
                         <div className="mt-4 md:mt-0 flex flex-col items-end gap-2">
                             <div className="flex gap-2">
-                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Dernière CPN : {new Date(patient.lastVisit).toLocaleDateString('fr-FR')}</span>
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Prochaine CPN : {new Date(patient.nextVisit).toLocaleDateString('fr-FR')}</span>
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Dernière CPN : {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('fr-FR') : '—'}</span>
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Prochaine CPN : {patient.nextVisit ? new Date(patient.nextVisit).toLocaleDateString('fr-FR') : '—'}</span>
                             </div>
                             <Button
                                 className="mt-4"
                                 variant="primary"
-                                onClick={() => router.push(`/dashboard/patients/${patient.id}/dossier/DM001`)}
+                                disabled={!patient.dossierId}
+                                onClick={() => patient.dossierId && router.push(`/dashboard/patients/${patient.id}/dossier/${patient.dossierId}`)}
                             >
                                 Voir dossier maternité
                             </Button>
@@ -150,8 +128,8 @@ export default function PatientDetailPage() {
                         <div className="bg-white rounded-xl shadow p-6">
                             <h2 className="text-lg font-bold text-primary mb-4">Suivi médical</h2>
                             <div className="space-y-2">
-                                <div><span className="font-semibold">Dernière CPN :</span> {new Date(patient.lastVisit).toLocaleDateString('fr-FR')}</div>
-                                <div><span className="font-semibold">Prochaine CPN :</span> {new Date(patient.nextVisit).toLocaleDateString('fr-FR')}</div>
+                                <div><span className="font-semibold">Dernière CPN :</span> {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('fr-FR') : '—'}</div>
+                                <div><span className="font-semibold">Prochaine CPN :</span> {patient.nextVisit ? new Date(patient.nextVisit).toLocaleDateString('fr-FR') : '—'}</div>
                                 <div><span className="font-semibold">Dossier maternité :</span> <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">À venir</span></div>
                             </div>
                         </div>

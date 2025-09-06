@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, 
   Activity, 
@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Heart
 } from 'lucide-react';
+import { useAuth } from '@/hooks/auth';
 
 const Sidebar = ({
   user = { name: 'Lulla Devi', role: 'Dept Admin', avatar: '/images/avatar-placeholder.jpg' },
@@ -25,18 +26,38 @@ const Sidebar = ({
   onClose
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { currentUser, logout } = useAuth();
+
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    try {
+      await logout();
+    } catch (err) {
+      // ignore error, still redirect
+    } finally {
+      router.push('/login');
+    }
+  };
+
+  // Vérifier si l'utilisateur est un responsable
+  const isResponsable = currentUser?.role === 'responsable';
 
   // ✅ Correction : utilisation des icônes Lucide
-  const menuItems = [
+  const baseMenuItems = [
     { name: 'Tableau de Bord', href: '/dashboard', icon: Home },
     { name: 'Patientes', href: '/dashboard/patients', icon: Users },
     { name: 'CPN', href: '/dashboard/cpn', icon: Stethoscope },
     { name: 'Accouchements', href: '/dashboard/accouchements', icon: Baby },
     { name: 'Planification', href: '/dashboard/planification', icon: Calendar },
     { name: 'Rapports', href: '/dashboard/rapports', icon: BarChart3 },
-    { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserCheck },
     { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings },
   ];
+
+  // Ajouter le menu Utilisateurs seulement pour les responsables
+  const menuItems = isResponsable 
+    ? [...baseMenuItems.slice(0, 6), { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserCheck }, ...baseMenuItems.slice(6)]
+    : baseMenuItems;
 
   return (
     <>
@@ -82,8 +103,8 @@ const Sidebar = ({
                 <Heart className="w-6 h-6" />
               </div>
               <div className="ml-3">
-                <p className="text-sm font-semibold text-gray-800">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.role}</p>
+                <p className="text-sm font-semibold text-gray-800">{currentUser?.displayName || currentUser?.firstName + ' ' + currentUser?.lastName || user.name}</p>
+                <p className="text-xs text-gray-500">{currentUser?.role || user.role}</p>
               </div>
             </div>
           </div>
@@ -140,13 +161,13 @@ const Sidebar = ({
 
           {/* Logout */}
           <div className="p-4 border-t border-gray-100">
-            <Link
-              href="/login"
-              className="flex items-center px-4 py-3 text-sm text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center px-4 py-3 text-left text-sm text-red-500 rounded-lg hover:bg-red-50 transition-colors"
             >
               <LogOut className="w-5 h-5 mr-3" />
               <span className="font-medium">Déconnexion</span>
-            </Link>
+            </button>
           </div>
         </div>
       </aside>

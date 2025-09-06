@@ -8,26 +8,40 @@ const MOIS_OPTIONS = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-export default function GenerateRapportModal({ open, onClose }) {
+export default function GenerateRapportModal({ open, onClose, onGenerate }) {
   const [type, setType] = useState("CPN");
   const [mois, setMois] = useState("");
   const [annee, setAnnee] = useState(2025);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   if (!open) return null;
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    setTimeout(() => {
+    try {
+      if (onGenerate) {
+        const res = await onGenerate({ type, mois, annee });
+        if (res && res.success) {
+          setSuccess(true);
+          setTimeout(() => {
+            setSuccess(false);
+            onClose();
+          }, 1000);
+        } else {
+          setError(res?.error?.message || 'Échec de la génération du rapport');
+        }
+      } else {
+        setError('Aucun gestionnaire de génération fourni.');
+      }
+    } catch (err) {
+      setError(err?.message || 'Erreur inconnue lors de la génération');
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-      }, 1000);
-    }, 1500);
+    }
   };
 
   return (
@@ -72,6 +86,7 @@ export default function GenerateRapportModal({ open, onClose }) {
             />
           </div>
           {success && <div className="text-green-600 text-sm">Rapport généré avec succès !</div>}
+          {error && <div className="text-red-600 text-sm">{error}</div>}
           <div className="flex justify-end gap-2 mt-4">
             <Button type="button" variant="outline" onClick={onClose}>Annuler</Button>
             <Button type="submit" variant="primary" disabled={loading}>
