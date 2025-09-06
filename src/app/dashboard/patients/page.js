@@ -506,73 +506,186 @@ export default function PatientsPage() {
                 )}
             </div>
 
-            {/* Add/Edit Patient Modal */}
-            <AddPregnantWomanModal
-                open={showAddModal || !!editingPatient}
-                onClose={() => {
-                    setShowAddModal(false);
-                    setEditingPatient(null);
-                }}
-                onAdd={editingPatient ? handleEditPatient : handleAddPatient}
-                editData={editingPatient}
-                isEditing={!!editingPatient}
-            />
+{/* Add/Edit Patient Modal - Version moderne */}
+<AddPregnantWomanModal
+    open={showAddModal || !!editingPatient}
+    onClose={() => {
+        setShowAddModal(false);
+        setEditingPatient(null);
+    }}
+    onAdd={editingPatient ? handleEditPatient : handleAddPatient}
+    editData={editingPatient}
+    isEditing={!!editingPatient}
+/>
 
-            {/* Modal de détail patiente */}
-            {selectedPatient && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
-                        <button
-                            className="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-xl"
-                            onClick={() => setSelectedPatient(null)}
-                            aria-label="Fermer"
-                        >
-                            &times;
-                        </button>
-                        <h2 className="text-xl font-bold text-blue-600 mb-4">Détail patiente</h2>
-                        <div className="space-y-3">
-                            <div className="flex justify-between">
-                                <span className="font-semibold text-gray-700">ID :</span>
-                                <span>{selectedPatient.id}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="font-semibold text-gray-700">Nom :</span>
-                                <span>{selectedPatient.name}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="font-semibold text-gray-700">Âge :</span>
-                                <span>{selectedPatient.age} ans</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="font-semibold text-gray-700">Téléphone :</span>
-                                <span>{selectedPatient.phone}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-semibold text-gray-700">Statut :</span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedPatient.status)}`}>
-                                    {selectedPatient.status}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="font-semibold text-gray-700">Grossesse :</span>
-                                <span>{selectedPatient.gestationalAge}</span>
-                            </div>
-                            {selectedPatient.lastVisit && (
-                                <div className="flex justify-between">
-                                    <span className="font-semibold text-gray-700">Dernière CPN :</span>
-                                    <span>{new Date(selectedPatient.lastVisit).toLocaleDateString('fr-FR')}</span>
-                                </div>
-                            )}
-                            {selectedPatient.nextVisit && (
-                                <div className="flex justify-between">
-                                    <span className="font-semibold text-gray-700">Prochaine CPN :</span>
-                                    <span>{new Date(selectedPatient.nextVisit).toLocaleDateString('fr-FR')}</span>
-                                </div>
-                            )}
-                        </div>
+{/* Modal de détail patiente - Version moderne */}
+{selectedPatient && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full relative transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95">
+            {/* Header avec gradient */}
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-3xl p-6 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
+                
+                <button
+                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                    onClick={() => setSelectedPatient(null)}
+                    aria-label="Fermer"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+                
+                <div className="flex items-center space-x-4 relative z-10">
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/30">
+                        <User className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold">Détail Patiente</h2>
+                        <p className="text-blue-100 text-sm">Informations complètes</p>
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Contenu principal */}
+            <div className="p-6 space-y-4">
+                {/* Informations principales */}
+                <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <Hash className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <span className="font-semibold text-gray-700">Identifiant</span>
+                        </div>
+                        <span className="font-mono text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                            {selectedPatient.id}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <User className="w-5 h-5 text-green-600" />
+                            </div>
+                            <span className="font-semibold text-gray-700">Nom complet</span>
+                        </div>
+                        <span className="font-medium text-gray-900">{selectedPatient.name}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                <Calendar className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <span className="font-semibold text-gray-700">Âge</span>
+                        </div>
+                        <span className="font-medium text-gray-900">{selectedPatient.age} ans</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                                <Phone className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <span className="font-semibold text-gray-700">Téléphone</span>
+                        </div>
+                        <a 
+                            href={`tel:${selectedPatient.phone}`}
+                            className="font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200 hover:underline"
+                        >
+                            {selectedPatient.phone}
+                        </a>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                                <Heart className="w-5 h-5 text-red-600" />
+                            </div>
+                            <span className="font-semibold text-gray-700">Statut médical</span>
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedPatient.status)}`}>
+                            {getStatusIcon(selectedPatient.status)}
+                            <span className="ml-1">{selectedPatient.status}</span>
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
+                                <Baby className="w-5 h-5 text-pink-600" />
+                            </div>
+                            <span className="font-semibold text-gray-700">Grossesse</span>
+                        </div>
+                        <span className="font-medium text-gray-900">{selectedPatient.gestationalAge}</span>
+                    </div>
+
+                    {selectedPatient.lastVisit && (
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-indigo-600" />
+                                </div>
+                                <span className="font-semibold text-gray-700">Dernière CPN</span>
+                            </div>
+                            <span className="font-medium text-gray-900">
+                                {new Date(selectedPatient.lastVisit).toLocaleDateString('fr-FR')}
+                            </span>
+                        </div>
+                    )}
+
+                    {selectedPatient.nextVisit && (
+                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                </div>
+                                <span className="font-semibold text-blue-700">Prochaine CPN</span>
+                            </div>
+                            <span className="font-bold text-blue-800">
+                                {new Date(selectedPatient.nextVisit).toLocaleDateString('fr-FR')}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                    <button
+                        onClick={() => {
+                            setEditingPatient(selectedPatient);
+                            setSelectedPatient(null);
+                        }}
+                        className="flex-1 flex items-center justify-center px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 hover:scale-105 hover:shadow-lg font-medium"
+                    >
+                        <Edit className="w-5 h-5 mr-2" />
+                        Modifier
+                    </button>
+                    <button
+                        onClick={() => {
+                            // Logique pour voir le dossier complet
+                            console.log('Voir dossier complet:', selectedPatient.id);
+                        }}
+                        className="flex-1 flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105 font-medium"
+                    >
+                        <Eye className="w-5 h-5 mr-2" />
+                        Dossier complet
+                    </button>
+                </div>
+
+                {/* Informations supplémentaires */}
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700">Adresse</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{selectedPatient.adresse || 'Non renseignée'}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
+
         </DashboardLayout>
     );
 }
