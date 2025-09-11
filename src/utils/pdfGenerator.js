@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export const generatePDFReport = (reportData, reportType, month, year) => {
     const doc = new jsPDF();
@@ -70,7 +70,7 @@ const generateCPNPDFContent = (doc, data, startY, margin) => {
         ['Taux de completion (%)', `${data.tauxCompletion || 0}%`]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Indicateur', 'Valeur']],
         body: generalStats,
@@ -98,7 +98,7 @@ const generateCPNPDFContent = (doc, data, startY, margin) => {
         ['Planifié', data.cpnPlanned || 0, `${((data.cpnPlanned || 0) / (data.totalConsultations || 1) * 100).toFixed(1)}%`]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Statut', 'Nombre', 'Pourcentage']],
         body: statusData,
@@ -126,7 +126,7 @@ const generateAccouchementPDFContent = (doc, data, startY, margin) => {
         ['Moyenne enfants/accouchement', (data.moyenneEnfantsParAccouchement || 0).toFixed(2)]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Indicateur', 'Valeur']],
         body: generalStats,
@@ -153,7 +153,7 @@ const generateAccouchementPDFContent = (doc, data, startY, margin) => {
         ['Césarienne', data.cesarienne || 0, `${((data.cesarienne || 0) / (data.totalAccouchements || 1) * 100).toFixed(1)}%`]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Mode', 'Nombre', 'Pourcentage']],
         body: modeData,
@@ -180,7 +180,7 @@ const generateAccouchementPDFContent = (doc, data, startY, margin) => {
         ['Féminin', data.enfantsFeminins || 0, `${((data.enfantsFeminins || 0) / (data.totalEnfants || 1) * 100).toFixed(1)}%`]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Genre', 'Nombre', 'Pourcentage']],
         body: genderData,
@@ -204,7 +204,7 @@ const generatePlanificationPDFContent = (doc, data, startY, margin) => {
         ['Méthode la plus populaire', data.methodePopulaire || 'N/A']
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Indicateur', 'Valeur']],
         body: generalStats,
@@ -232,7 +232,7 @@ const generatePlanificationPDFContent = (doc, data, startY, margin) => {
         `${((count / (data.totalPlanifications || 1)) * 100).toFixed(1)}%`
     ]);
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Méthode', 'Nombre', 'Pourcentage']],
         body: methodesData,
@@ -259,7 +259,7 @@ const generatePlanificationPDFContent = (doc, data, startY, margin) => {
         ['Masculin', data.repartitionGenre?.masculin || 0, `${((data.repartitionGenre?.masculin || 0) / (data.totalPlanifications || 1) * 100).toFixed(1)}%`]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
         startY: yPos,
         head: [['Genre', 'Nombre', 'Pourcentage']],
         body: genderData,

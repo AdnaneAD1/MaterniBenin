@@ -2,6 +2,7 @@
 
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import AddPregnancyModal from '@/components/AddPregnancyModal';
 import { useEffect, useState, useCallback } from "react";
 import { useDossier } from '@/hooks/dossier';
 import { usePatiente } from '@/hooks/patientes';
@@ -38,6 +39,7 @@ export default function DossierMaternitePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isAddingPregnancy, setIsAddingPregnancy] = useState(false);
+    const [showPregnancyModal, setShowPregnancyModal] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -64,11 +66,12 @@ export default function DossierMaternitePage() {
         fetchData();
     }, [id, dossierId, fetchData]);
 
-    const handleAddPregnancy = async () => {
+    const handleAddPregnancy = async (pregnancyData) => {
         try {
             setIsAddingPregnancy(true);
-            const res = await addPregnancy(dossierId);
+            const res = await addPregnancy(dossierId, pregnancyData);
             if (res.success) {
+                setShowPregnancyModal(false);
                 await fetchData();
             } else {
                 alert(res.error?.message || 'Erreur lors de la création de la grossesse');
@@ -151,27 +154,17 @@ export default function DossierMaternitePage() {
                                 </div>
                             </div>
                             <div className="flex items-center space-x-3">
-                                <button className="flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium shadow-sm">
+                                {/* <button className="flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium shadow-sm">
                                     <Calendar className="w-4 h-4 mr-2" />
                                     Planifier CPN
-                                </button>
+                                </button> */}
                                 {!hasActivePregnancy && (
                                     <button
-                                        onClick={handleAddPregnancy}
-                                        disabled={isAddingPregnancy}
-                                        className="flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold disabled:opacity-50"
+                                        onClick={() => setShowPregnancyModal(true)}
+                                        className="flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold"
                                     >
-                                        {isAddingPregnancy ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                                Ajout...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Plus className="w-4 h-4 mr-2" />
-                                                Ajouter une grossesse
-                                            </>
-                                        )}
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Ajouter une grossesse
                                     </button>
                                 )}
                             </div>
@@ -229,9 +222,9 @@ export default function DossierMaternitePage() {
                                                     <div className="flex-1">
                                                         <div className="text-sm font-semibold text-gray-900">{intervention.type}</div>
                                                         <div className="text-xs text-gray-600 mb-1">
-                                                            {new Date(intervention.date).toLocaleDateString('fr-FR')}
+                                                            {new Date(intervention.date_action).toLocaleDateString('fr-FR')}
                                                         </div>
-                                                        <div className="text-xs text-gray-500">{intervention.description}</div>
+                                                        <div className="text-xs text-gray-500">{intervention.action}</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -268,6 +261,9 @@ export default function DossierMaternitePage() {
                                             <div className="space-y-2 mb-4">
                                                 <InfoRow label="Consultations" value={grossesse.consultations} />
                                                 <InfoRow label="Accouchements" value={grossesse.accouchements} />
+                                                {grossesse.moisGrossesse && (
+                                                    <InfoRow label="Mois de grossesse" value={`${grossesse.moisGrossesse} mois`} />
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => router.push(`/dashboard/patients/${id}/dossier/${dossierId}/grossesses/${grossesse.id}`)}
@@ -357,6 +353,14 @@ export default function DossierMaternitePage() {
                     </div>
                 </div>
             </div>
+            
+            {/* Modal d'ajout de grossesse */}
+            <AddPregnancyModal
+                open={showPregnancyModal}
+                onClose={() => setShowPregnancyModal(false)}
+                onSubmit={handleAddPregnancy}
+                loading={isAddingPregnancy}
+            />
         </DashboardLayout>
     );
 }

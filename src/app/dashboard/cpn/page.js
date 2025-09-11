@@ -49,15 +49,22 @@ export default function CPNPage() {
                         id: cpn.id,
                         patientName: `${cpn.patient.prenom || ''} ${cpn.patient.nom || ''}`.trim(),
                         patientId: cpn.patient.patientId,
-                        date: cpn.rdv,
+                        date: cpn.dateConsultation,
+                        visitNumber: cpn.visitNumber,
+                        gestationalAge: cpn.ageGestationnel,
                         status: cpn.status,
                         diagnostique: cpn.diagnostique,
-                        dateConsultation: cpn.dateConsultation,
+                        rdv: cpn.rdv,
                         userId: cpn.userId,
-                        cpnDone: cpn.cpnDone,
                         patient: cpn.patient,
                         avatar: `${(cpn.patient.prenom || 'P').charAt(0)}${(cpn.patient.nom || 'P').charAt(0)}`,
-                        color: getRandomColor()
+                        color: getRandomColor(),
+                        // Nouveaux champs pour les CPN virtuelles
+                        isVirtual: cpn.isVirtual || false,
+                        cpnLabel: cpn.cpnLabel || null,
+                        scheduledWeeks: cpn.scheduledWeeks || null,
+                        currentWeeks: cpn.currentWeeks || null,
+                        grossesseId: cpn.grossesseId
                     }));
                     setCpnData(transformedCpn);
                 }
@@ -101,7 +108,7 @@ export default function CPNPage() {
             'Terminé': 'bg-green-100 text-green-800',
             'Planifié': 'bg-blue-100 text-blue-800',
             'En attente': 'bg-yellow-100 text-yellow-800',
-            'Annulé': 'bg-red-100 text-red-800'
+            'Annulé': 'bg-gray-100 text-gray-800'
         };
         return statusConfig[status] || 'bg-gray-100 text-gray-800';
     };
@@ -294,30 +301,66 @@ export default function CPNPage() {
                                     <tr key={cpn.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${cpn.color}`}>
-                                                    {cpn.avatar}
+                                                <div className="flex-shrink-0 h-10 w-10">
+                                                    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                        <User className="h-5 w-5 text-indigo-600" />
+                                                    </div>
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{cpn.patientName}</div>
-                                                    <div className="text-sm text-gray-500">ID: {cpn.patientId}</div>
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {cpn.patientName}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {cpn.patientInfo?.telephone && (
+                                                            <div>Tél: {cpn.patientInfo.telephone}</div>
+                                                        )}
+                                                        {cpn.patientInfo?.age && (
+                                                            <div>Âge: {cpn.patientInfo.age} ans</div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{cpn.type || 'CPN'}</div>
-                                            <div className="text-sm text-gray-500">{cpn.doctor || 'Sage-femme'}</div>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="text-sm text-gray-900">
+                                                    CPN
+                                                </div>
+                                                {cpn.isVirtual && (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                        CPN
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {cpn.scheduledWeeks && (
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    Semaines {cpn.scheduledWeeks}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {cpn.date ? new Date(cpn.date).toLocaleDateString('fr-FR') : 'Non définie'}
+                                                {cpn.rdv ? (() => {
+                                                    try {
+                                                        // Gérer les dates Firestore (avec toDate) et les dates normales
+                                                        const dateObj = cpn.rdv.toDate ? cpn.rdv.toDate() : new Date(cpn.rdv);
+                                                        const dateStr = dateObj.toLocaleDateString('fr-FR');
+                                                        const timeStr = dateObj.toLocaleTimeString('fr-FR', { 
+                                                            hour: '2-digit', 
+                                                            minute: '2-digit' 
+                                                        });
+                                                        return `${dateStr} à ${timeStr}`;
+                                                    } catch (error) {
+                                                        return 'Date invalide';
+                                                    }
+                                                })() : 'Non définie'}
                                             </div>
-                                            <div className="text-sm text-gray-500">{cpn.time || '--:--'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">{cpn.visitNumber || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{cpn.gestationalAge || 'N/A'}</div>
+                                            <div className="text-sm text-gray-900">{cpn.moisGrossesse || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(cpn.status)}`}>
@@ -427,24 +470,24 @@ export default function CPNPage() {
                                                 <div className="text-sm text-gray-500">ID: {selectedCpn.patientId}</div>
                                             </div>
                                         </div>
-                                        {selectedCpn.patient && (
+                                        {selectedCpn.patientInfo && (
                                             <>
-                                                {selectedCpn.patient.age && (
+                                                {selectedCpn.patientInfo.age && (
                                                     <div className="flex justify-between">
                                                         <span className="font-medium text-gray-700">Âge :</span>
-                                                        <span>{selectedCpn.patient.age} ans</span>
+                                                        <span>{selectedCpn.patientInfo.age} ans</span>
                                                     </div>
                                                 )}
-                                                {selectedCpn.patient.telephone && (
+                                                {selectedCpn.patientInfo.telephone && (
                                                     <div className="flex justify-between">
                                                         <span className="font-medium text-gray-700">Téléphone :</span>
-                                                        <span>{selectedCpn.patient.telephone}</span>
+                                                        <span>{selectedCpn.patientInfo.telephone}</span>
                                                     </div>
                                                 )}
-                                                {selectedCpn.patient.adresse && (
+                                                {selectedCpn.patientInfo.adresse && (
                                                     <div className="flex justify-between">
                                                         <span className="font-medium text-gray-700">Adresse :</span>
-                                                        <span>{selectedCpn.patient.adresse}</span>
+                                                        <span>{selectedCpn.patientInfo.adresse}</span>
                                                     </div>
                                                 )}
                                             </>
@@ -462,7 +505,14 @@ export default function CPNPage() {
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="font-medium text-gray-700">Date RDV :</span>
-                                            <span>{selectedCpn.date ? new Date(selectedCpn.date).toLocaleDateString('fr-FR') : 'Non définie'}</span>
+                                            <span>{selectedCpn.rdv ? (() => {
+                                                try {
+                                                    const dateObj = selectedCpn.rdv.toDate ? selectedCpn.rdv.toDate() : new Date(selectedCpn.rdv);
+                                                    return dateObj.toLocaleDateString('fr-FR') + ' à ' + dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                                                } catch (error) {
+                                                    return 'Date invalide';
+                                                }
+                                            })() : 'Non définie'}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="font-medium text-gray-700">Statut :</span>
@@ -483,17 +533,34 @@ export default function CPNPage() {
                                                 <span>{selectedCpn.visitNumber}</span>
                                             </div>
                                         )}
-                                        {selectedCpn.gestationalAge && (
+                                        {selectedCpn.moisGrossesse && (
                                             <div className="flex justify-between">
                                                 <span className="font-medium text-gray-700">Âge gestationnel :</span>
-                                                <span>{selectedCpn.gestationalAge}</span>
+                                                <span>{selectedCpn.moisGrossesse}</span>
+                                            </div>
+                                        )}
+                                        {selectedCpn.diagnostique && (
+                                            <div className="flex justify-between">
+                                                <span className="font-medium text-gray-700">Diagnostic :</span>
+                                                <span>{selectedCpn.diagnostique}</span>
+                                            </div>
+                                        )}
+                                        {selectedCpn.traitement && (
+                                            <div className="flex justify-between">
+                                                <span className="font-medium text-gray-700">Traitement :</span>
+                                                <span>{selectedCpn.traitement}</span>
+                                            </div>
+                                        )}
+                                        {selectedCpn.observations && (
+                                            <div className="flex justify-between">
+                                                <span className="font-medium text-gray-700">Observations :</span>
+                                                <span>{selectedCpn.observations}</span>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Diagnostic */}
                             {selectedCpn.diagnostique && (
                                 <div className="mt-6">
                                     <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Diagnostic</h3>

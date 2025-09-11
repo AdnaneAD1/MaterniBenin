@@ -106,6 +106,16 @@ export default function RapportsPage() {
         return statusConfig[status] || 'bg-gray-100 text-gray-800';
     };
 
+    const getStatusIcon = (status) => {
+        switch(status) {
+            case 'Généré': return <CheckCircle className="w-4 h-4" />;
+            case 'En cours': return <Clock className="w-4 h-4" />;
+            case 'Planifié': return <Calendar className="w-4 h-4" />;
+            case 'Erreur': return <XCircle className="w-4 h-4" />;
+            default: return <AlertCircle className="w-4 h-4" />;
+        }
+    };
+
     const getTypeBadge = (type) => {
         const typeConfig = {
             'CPN': 'bg-blue-100 text-blue-800',

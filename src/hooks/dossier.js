@@ -198,10 +198,15 @@ export function useDossier() {
       // Récupérer CPNs de la grossesse et joindre consultations
       const cpnsSnap = await getDocs(query(collection(db, "cpns"), where("grossesseId", "==", grossesseId)));
       const consultations = [];
+      
       for (const cpnDoc of cpnsSnap.docs) {
         const cpnData = cpnDoc.data();
         let dateConsultationISO = null;
         let rdv = null;
+        let diagnostique = '';
+        let ageGest = null;
+        
+        // Récupérer les données de consultation si disponibles
         if (cpnData.consultationId) {
           const cSnap = await getDoc(doc(db, "consultations", cpnData.consultationId));
           if (cSnap.exists()) {
@@ -209,10 +214,24 @@ export function useDossier() {
             const dt = cData.dateConsultation?.toDate ? cData.dateConsultation.toDate() : null;
             dateConsultationISO = dt ? dt.toISOString() : null;
             rdv = cData.rdv || null;
+            diagnostique = cData.diagnostique || '';
           }
         }
+        
+        // Si pas de date de consultation, utiliser createdAt
         if (!dateConsultationISO && cpnData.createdAt?.toDate) {
           dateConsultationISO = cpnData.createdAt.toDate().toISOString();
+        }
+        
+        // Calculer l'âge gestationnel si on a une date de consultation et DDR
+        if (dateConsultationISO && gData.ddr) {
+          const dateConsult = new Date(dateConsultationISO);
+          const ddr = gData.ddr.toDate ? gData.ddr.toDate() : new Date(gData.ddr);
+          const diffTime = Math.abs(dateConsult - ddr);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const weeks = Math.floor(diffDays / 7);
+          const days = diffDays % 7;
+          ageGest = `${weeks}SA + ${days}j`;
         }
 
         consultations.push({
@@ -222,9 +241,20 @@ export function useDossier() {
           nom_medecin: '—',
           nom_sage_femme: '—',
           terme: null,
-          age_gest: null,
+          age_gest: ageGest,
           sexe_enceinte: '—',
           RDV: rdv,
+          diagnostique: diagnostique,
+          // Toutes les informations CPN
+          dormirsurmild: cpnData.dormirsurmild || false,
+          sp_nbr: cpnData.sulfadoxine || '',
+          meben: cpnData.mebendazole || '',
+          fer_foldine: cpnData.ferfoldine || '',
+          vat: cpnData.vat || '',
+          gare_depiste: cpnData.garedepiste || false,
+          gare_refere: cpnData.garerefere || false,
+          diagnostique_associe: diagnostique || '',
+          conduite_tenue: cpnData.conduiteTenue || ''
         });
       }
 

@@ -63,7 +63,7 @@ export default function PatientsPage() {
                         adresse: patient.adresse || 'N/A',
                         nextVisit: patient.prochainRdv || 'Non planifié',
                         status: 'Normal', // Default status
-                        gestationalAge: 'À renseigner',
+                        gestationalAge: patient.moisGrossesseActuel || 'Aucun',
                         lastVisit: '',
                         avatar: `${(patient.prenom || 'P').charAt(0)}${(patient.nom || 'P').charAt(0)}`,
                         color: getRandomColor(),

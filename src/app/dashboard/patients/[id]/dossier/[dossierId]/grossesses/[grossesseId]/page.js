@@ -220,8 +220,6 @@ export default function GrossesseDetailPage() {
                                                 </span>
                                             </div>
                                             <div className="space-y-1">
-                                                <InfoRow label="Sage-femme" value={c.nom_sage_femme} />
-                                                <InfoRow label="Sexe enceinte" value={c.sexe_enceinte} />
                                                 <InfoRow label="Prochain RDV" value={c.RDV} />
                                             </div>
                                         </div>

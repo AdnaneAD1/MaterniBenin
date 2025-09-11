@@ -15,8 +15,10 @@ import {
     limit as fsLimit,
     onSnapshot,
     getDoc,
+    setDoc,
 } from "firebase/firestore";
 import { useAuth } from "./auth";
+import { generatePlanificationId } from "@/utils/idGenerator";
 
 export function usePlanification() {
     const [planifications, setPlanifications] = useState([]);
@@ -56,15 +58,19 @@ export function usePlanification() {
                 createdAt: Timestamp.now(),
             });
             const personneRef = await addDoc(collection(db, "personnes"), personneData);
-            const docRef = await addDoc(collection(db, "planifications"), {
+            
+            // Générer un ID personnalisé pour la planification
+            const planificationId = await generatePlanificationId();
+            const planificationData = {
                 methodeChoisis: planification.methodeChoisis,
                 sexe: planification.sexe,
                 personneId: personneRef.id,
                 consultationId: conRef.id,
                 createdAt: Timestamp.now(),
-            });
+            };
+            await setDoc(doc(db, "planifications", planificationId), planificationData);
             
-            return {success: true, planificationId: docRef.id, consultationId: conRef.id, personneId: personneRef.id};
+            return {success: true, planificationId: planificationId, consultationId: conRef.id, personneId: personneRef.id};
         } catch (error) {
             setError(error);
             return {success: false, error};

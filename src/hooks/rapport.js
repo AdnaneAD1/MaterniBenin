@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { db } from '../firebase/firebase';
-import { collection, addDoc, query, where, getDocs, Timestamp, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, Timestamp, orderBy, limit, setDoc, doc } from 'firebase/firestore';
 import { useAuth } from './auth';
+import { generateRapportId } from '@/utils/idGenerator';
 
 export function useRapport() {
     const [rapports, setRapports] = useState([]);
@@ -16,16 +17,19 @@ export function useRapport() {
             setLoading(true);
             setError(null);
 
+            // Générer un ID personnalisé pour le rapport
+            const rapportId = await generateRapportId();
+
             const res = await fetch('/api/rapports/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, mois, annee })
+                body: JSON.stringify({ type, mois, annee, rapportId })
             });
             const data = await res.json();
             if (!res.ok || !data.success) {
                 throw new Error(data.error || 'Échec de la génération du rapport');
             }
-            return data; // { success, reportId, data, pdfUrl, cloudinaryPublicId }
+            return { ...data, reportId: rapportId }; // { success, reportId, data, pdfUrl, cloudinaryPublicId }
         } catch (error) {
             setError(error);
             return { success: false, error };

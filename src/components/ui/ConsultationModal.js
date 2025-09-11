@@ -40,11 +40,6 @@ export default function ConsultationModal({ open, onClose, consultation }) {
                 icon={<Calendar className="w-4 h-4 text-blue-500" />}
               />
               <InfoCard 
-                label="Sage-femme" 
-                value={consultation.nom_sage_femme} 
-                icon={<User className="w-4 h-4 text-blue-500" />}
-              />
-              <InfoCard 
                 label="Prochain RDV" 
                 value={consultation.RDV ?? 'Non programmé'} 
                 icon={<Clock className="w-4 h-4 text-blue-500" />}
@@ -119,7 +114,7 @@ export default function ConsultationModal({ open, onClose, consultation }) {
               <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
                 <h4 className="font-semibold text-orange-900 mb-2">Diagnostic associé</h4>
                 <p className="text-sm text-gray-700">
-                  {consultation.diagnostique_associé || 'Aucun diagnostic particulier'}
+                  {consultation.diagnostique_associe || 'Aucun diagnostic particulier'}
                 </p>
               </div>
               <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">

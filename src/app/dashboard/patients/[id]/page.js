@@ -42,7 +42,7 @@ export default function PatientDetailPage() {
             }
         })();
         return () => { mounted = false; };
-    }, [id, getPatientDetails]);
+    }, [id]);
 
     if (loading) {
         return (
@@ -113,10 +113,10 @@ export default function PatientDetailPage() {
                                 </div>
                             </div>
                             <div className="flex items-center space-x-3">
-                                <button className="flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium shadow-sm">
+                                {/* <button className="flex items-center px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium shadow-sm">
                                     <Calendar className="w-4 h-4 mr-2" />
                                     Planifier CPN
-                                </button>
+                                </button> */}
                                 <button className="flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold">
                                     <Edit className="w-4 h-4 mr-2" />
                                     Modifier

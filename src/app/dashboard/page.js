@@ -96,7 +96,7 @@ export default function Dashboard() {
     <p className="text-white/80 mb-8">Votre planning d&apos;aujourd&apos;hui.</p>
 
     {/* Stats plus légères */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 flex items-center border border-white/20 shadow-lg">
         <div className="bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full p-3 mr-3">
           <Eye className="w-5 h-5 text-white" />
@@ -189,25 +189,6 @@ export default function Dashboard() {
               Voir tout <ArrowRight className="w-4 h-4 ml-1" />
             </button>
           </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Heart className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">{loading ? '…' : (patientStats?.totalPatients ?? 0)}</div>
-                <div className="text-sm text-gray-500">Urgences</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-purple-600 text-sm font-medium">+15%</div>
-              <div className="text-xs text-gray-400">ce mois</div>
-            </div>
-            <button className="text-purple-600 text-sm font-medium flex items-center hover:text-purple-700">
-              Voir tout <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
         </div>
 
         
@@ -232,7 +213,6 @@ export default function Dashboard() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patiente</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type de consultation</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heure</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
@@ -251,7 +231,20 @@ export default function Dashboard() {
                   const nom = item.patient?.nom || '';
                   const prenom = item.patient?.prenom || '';
                   const initials = `${(prenom[0]||'').toUpperCase()}${(nom[0]||'').toUpperCase()}` || 'PN';
-                  const dateStr = item.rdv ? new Date(item.rdv).toLocaleDateString('fr-FR') : '—';
+                  const dateStr = item.dateConsultation ? (() => {
+                    try {
+                        // Gérer les dates Firestore (avec toDate) et les dates normales
+                        const dateObj = item.dateConsultation.toDate ? item.dateConsultation.toDate() : new Date(item.dateConsultation);
+                        const dateStr = dateObj.toLocaleDateString('fr-FR');
+                        const timeStr = dateObj.toLocaleTimeString('fr-FR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        return `${dateStr} à ${timeStr}`;
+                    } catch (error) {
+                        return 'Date invalide';
+                    }
+                })() : 'Non définie';
                   const statut = item.status;
                   const badgeClass = statut === 'Planifié' ? 'bg-yellow-100 text-yellow-800' : (statut === 'En attente' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800');
                   return (
@@ -269,7 +262,6 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CPN</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dateStr}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">—</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${badgeClass}`}>
                           {statut}

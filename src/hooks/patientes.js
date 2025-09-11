@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
+import { useAuth } from "./auth";
 import {
     collection,
     doc,
@@ -15,12 +16,22 @@ import {
     limit as fsLimit,
     onSnapshot,
     getDoc,
+    setDoc,
 } from "firebase/firestore";
+import {
+    generatePatientId,
+    generateDossierMedicalId,
+    generateAccouchementId,
+    generateCpnId,
+    generateEnfantId,
+    generateGrossesseId
+} from "@/utils/idGenerator";
 
 export function usePatiente() {
     const [patientes, setPatientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         const unsubscribe = onSnapshot(collection(db, "patientes"), (snapshot) => {
@@ -46,31 +57,44 @@ export function usePatiente() {
                 createdAt: Timestamp.now(),
             }
             const personneRef = await addDoc(collection(db, "personnes"), personneData);
+            
+            // Générer un ID personnalisé pour la patiente
+            const patientId = await generatePatientId();
             const patientData = {
                 personneId: personneRef.id,
                 createdAt: Timestamp.now(),
             }
-            const patientRef = await addDoc(collection(db, "patientes"), patientData);
+            await setDoc(doc(db, "patientes", patientId), patientData);
+            
+            // Générer un ID personnalisé pour le dossier médical
+            const dossierId = await generateDossierMedicalId();
             const dossierRef = {
-                patientId: patientRef.id,
+                patientId: patientId,
                 createdAt: Timestamp.now(),
             };
-            const dossierDocRef = await addDoc(collection(db, "dossiers"), dossierRef);
-            return { success: true, patientId: patientRef.id, dossierId: dossierDocRef.id, personneId: personneRef.id };
+            await setDoc(doc(db, "dossiers", dossierId), dossierRef);
+            
+            return { success: true, patientId: patientId, dossierId: dossierId, personneId: personneRef.id };
         } catch (error) {
             setError(error);
             return { success: false, error };
         }
     };
 
-    const addPregnancy = async (dossierId) => {
+    const addPregnancy = async (dossierId, pregnancyData = {}) => {
         try {
-            const grossesseDocRef = await addDoc(collection(db, "grossesses"), {
+            // Générer un ID personnalisé pour la grossesse
+            const grossesseId = await generateGrossesseId();
+            
+            const grossesseData = {
                 statut: "En cours",
                 dossierId: dossierId,
+                moisGrossesse: pregnancyData.moisGrossesse || null,
                 createdAt: Timestamp.now(),
-            });
-            return { success: true, dossierId: dossierId, grossesseId: grossesseDocRef.id };
+            };
+            
+            await setDoc(doc(db, "grossesses", grossesseId), grossesseData);
+            return { success: true, dossierId: dossierId, grossesseId: grossesseId };
         } catch (error) {
             setError(error);
             return { success: false, error };
@@ -88,21 +112,26 @@ export function usePatiente() {
                 createdAt: Timestamp.now(),
             });
             const allcpn = await getDocs(query(collection(db, "cpns"), where("grossesseId", "==", grossesseId)));
-            const cpnDocRef = await addDoc(collection(db, "cpns"), {
+            
+            // Générer un ID personnalisé pour la CPN
+            const cpnId = await generateCpnId();
+            const cpnData = {
                 cpn: "CPN " + (allcpn.docs.length + 1),
                 dormirsurmild: cpn.dormirsurmild,
                 sulfadoxine: cpn.sulphadoxine,
                 mebendazole: cpn.mebendazole,
                 ferfoldine: cpn.ferfoldine,
                 vat: cpn.vat,
-                garedepiste: cpn.garedepiste,
-                garerefere: cpn.garerefere,
+                garedepiste: cpn.gare_depiste,
+                garerefere: cpn.garere_fere,
                 conduiteTenue: cpn.conduiteTenue,
                 grossesseId: grossesseId,
                 consultationId: conRef.id,
                 createdAt: Timestamp.now(),
-            });
-            return { success: true, grossesseId: grossesseId, cpnId: cpnDocRef.id };
+            };
+            await setDoc(doc(db, "cpns", cpnId), cpnData);
+            
+            return { success: true, grossesseId: grossesseId, cpnId: cpnId };
         } catch (error) {
             setError(error);
             return { success: false, error };
@@ -111,6 +140,8 @@ export function usePatiente() {
 
     const addChildbirth = async (grossesseId, childbirth) => {
         try {
+            // Générer un ID personnalisé pour l'accouchement
+            const accouchementId = await generateAccouchementId();
             const accouchementData = {
                 nomMari: childbirth.nomMari,
                 prenomMari: childbirth.prenomMari,
@@ -123,24 +154,29 @@ export function usePatiente() {
                 grossesseId: grossesseId,
                 createdAt: Timestamp.now(),
             };
-            const accouchementDocRef = await addDoc(collection(db, "accouchements"), accouchementData);
+            await setDoc(doc(db, "accouchements", accouchementId), accouchementData);
+            
+            // Créer les enfants avec des IDs personnalisés
             const childrenPromises = childbirth.enfants.map(async (enfant) => {
+                const enfantId = await generateEnfantId();
                 const childData = {
                     nomEnfant: enfant.nomEnfant,
                     prenomEnfant: enfant.prenomEnfant,
                     sexeEnfant: enfant.sexe,
                     poids: enfant.poids,
-                    accouchementId: accouchementDocRef.id,
+                    accouchementId: accouchementId,
                     createdAt: Timestamp.now(),
                 };
-                return await addDoc(collection(db, "enfants"), childData);
+                await setDoc(doc(db, "enfants", enfantId), childData);
+                return enfantId;
             });
             const childrenIds = await Promise.all(childrenPromises);
+            
             const grossesseUpdate = {
                 statut: "Terminée",
             };
             await updateDoc(doc(db, "grossesses", grossesseId), grossesseUpdate);
-            return { success: true, grossesseId: grossesseId, accouchementId: accouchementDocRef.id, childrenIds };
+            return { success: true, grossesseId: grossesseId, accouchementId: accouchementId, childrenIds };
         } catch (error) {
             setError(error);
             return { success: false, error };
@@ -207,11 +243,44 @@ export function usePatiente() {
                     }
                 }
                 
+                // Calculer les mois de grossesse actuels
+                let moisGrossesseActuel = "Aucun";
+                if (!dossiersSnapshot.empty) {
+                    const dossierId = dossiersSnapshot.docs[0].id;
+                    
+                    // Get active pregnancy for this dossier
+                    const grossessesQuery = query(
+                        collection(db, "grossesses"),
+                        where("dossierId", "==", dossierId),
+                        where("statut", "==", "En cours")
+                    );
+                    const grossessesSnapshot = await getDocs(grossessesQuery);
+                    
+                    if (!grossessesSnapshot.empty) {
+                        const grossesseData = grossessesSnapshot.docs[0].data();
+                        
+                        if (grossesseData.moisGrossesse && grossesseData.createdAt) {
+                            const dateCreation = grossesseData.createdAt.toDate();
+                            const maintenant = new Date();
+                            const moisEcoules = Math.floor((maintenant - dateCreation) / (1000 * 60 * 60 * 24 * 30.44)); // Approximation d'un mois
+                            const moisTotal = parseInt(grossesseData.moisGrossesse) + moisEcoules;
+                            
+                            // Limiter à 9 mois maximum
+                            if (moisTotal <= 9 && moisTotal > 0) {
+                                moisGrossesseActuel = `${moisTotal} mois`;
+                            } else if (moisTotal > 9) {
+                                moisGrossesseActuel = "9+ mois";
+                            }
+                        }
+                    }
+                }
+
                 // Combine all data
                 const patientWithDetails = {
                     id: patientDoc.id,
                     ...personneData,
                     prochainRdv: latestCpnRdv,
+                    moisGrossesseActuel: moisGrossesseActuel,
                     patientId: patientDoc.id,
                     personneId: patientData.personneId
                 };
@@ -305,147 +374,309 @@ export function usePatiente() {
     const getCpnConsultations = async () => {
         try {
             setLoading(true);
-            
-            const today = new Date().toISOString().split('T')[0];
             const cpnConsultations = [];
+            const today = new Date();
             
-            // Get all CPN consultations with RDV dates
-            const consultationsQuery = query(
+            // 1. Get all completed CPN records from cpns collection
+            const cpnsQuery = query(collection(db, "cpns"));
+            const cpnsSnapshot = await getDocs(cpnsQuery);
+            
+            for (const cpnDoc of cpnsSnapshot.docs) {
+                const cpnData = { id: cpnDoc.id, ...cpnDoc.data() };
+                const grossesseId = cpnData.grossesseId;
+                
+                // Get grossesse to find dossier
+                const grossesseDoc = await getDoc(doc(db, "grossesses", grossesseId));
+                if (!grossesseDoc.exists()) continue;
+                
+                const grossesseData = grossesseDoc.data();
+                const dossierId = grossesseData.dossierId;
+                
+                // Get dossier to find patient
+                const dossierDoc = await getDoc(doc(db, "dossiers", dossierId));
+                if (!dossierDoc.exists()) continue;
+                
+                const dossierData = dossierDoc.data();
+                const patientId = dossierData.patientId;
+                
+                // Get patient to find person
+                const patientDoc = await getDoc(doc(db, "patientes", patientId));
+                if (!patientDoc.exists()) continue;
+                
+                const patientData = patientDoc.data();
+                const personneId = patientData.personneId;
+                
+                // Get person details
+                const personneDoc = await getDoc(doc(db, "personnes", personneId));
+                if (!personneDoc.exists()) continue;
+                
+                const personneData = personneDoc.data();
+                
+                // Get consultation details if available
+                let consultationData = null;
+                if (cpnData.consultationId) {
+                    const consultationDoc = await getDoc(doc(db, "consultations", cpnData.consultationId));
+                    if (consultationDoc.exists()) {
+                        consultationData = consultationDoc.data();
+                    }
+                }
+                
+                // Calculer l'âge gestationnel
+                let moisGrossesseActuel = "Non défini";
+                if (grossesseData.moisGrossesse && grossesseData.createdAt) {
+                    const dateCreation = grossesseData.createdAt.toDate();
+                    const maintenant = new Date();
+                    const moisEcoules = Math.floor((maintenant - dateCreation) / (1000 * 60 * 60 * 24 * 30.44)); // Approximation d'un mois
+                    const moisTotal = parseInt(grossesseData.moisGrossesse) + moisEcoules;
+                    
+                    // Limiter à 9 mois maximum
+                    if (moisTotal <= 9 && moisTotal > 0) {
+                        moisGrossesseActuel = `${moisTotal} mois`;
+                    } else if (moisTotal > 9) {
+                        moisGrossesseActuel = "9+ mois";
+                    }
+                }
+                
+                // Déterminer le statut correct de la consultation
+                let consultationStatus = "Terminé";
+                if (consultationData) {
+                    consultationStatus = consultationData.statut || "Terminé";
+                }
+                
+                const patientInfo = {
+                    patientId,
+                    personneId,
+                    ...personneData
+                };
+                
+                cpnConsultations.push({
+                    id: cpnData.id,
+                    patient: patientInfo,
+                    rdv: consultationData?.rdv || null,
+                    visitNumber: cpnData?.cpn || null,
+                    status: consultationStatus,
+                    diagnostique: cpnData.diagnostiqueAssocie || consultationData?.diagnostique || '',
+                    dateConsultation: consultationData?.dateConsultation || cpnData.createdAt,
+                    userId: cpnData.userId || consultationData?.userId,
+                    cpnDone: true,
+                    consultationId: cpnData.consultationId,
+                    ageGestationnel: moisGrossesseActuel,
+                    // Toutes les informations CPN
+                    dateConsultationCpn: cpnData.dateConsultation,
+                    dormirsurmild: cpnData.dormirsurmild || false,
+                    spNbr: cpnData.sulfadoxine || '',
+                    mebendazole: cpnData.mebendazole || '',
+                    ferFoldine: cpnData.ferfoldine || '',
+                    vat: cpnData.vat || '',
+                    gareDepiste: cpnData.garedepiste || false,
+                    gareRefere: cpnData.garerefere || false,
+                    conduiteTenue: cpnData.conduiteTenue || '',
+                    grossesseId: grossesseId
+                });
+            }
+            
+            // 2. Récupérer toutes les consultations CPN (sans restriction de grossesse)
+            const allConsultationsQuery = query(
                 collection(db, "consultations"),
-                where("type", "==", "CPN"),
-                where("rdv", "!=", null)
+                where("type", "==", "CPN")
             );
-            const consultationsSnapshot = await getDocs(consultationsQuery);
+            const allConsultationsSnapshot = await getDocs(allConsultationsQuery);
             
-            for (const consultationDoc of consultationsSnapshot.docs) {
+            console.log(`Total consultations CPN trouvées: ${allConsultationsSnapshot.docs.length}`);
+            
+            for (const consultationDoc of allConsultationsSnapshot.docs) {
                 const consultationData = { id: consultationDoc.id, ...consultationDoc.data() };
-                const rdvDate = consultationData.rdv;
                 
-                // Check if CPN was already done for this consultation
-                const cpnQuery = query(
-                    collection(db, "cpns"),
-                    where("consultationId", "==", consultationDoc.id)
-                );
-                const cpnSnapshot = await getDocs(cpnQuery);
-                const cpnAlreadyDone = !cpnSnapshot.empty;
+                console.log('Consultation CPN data:', consultationData);
+                console.log('RDV de cette consultation:', consultationData.rdv);
                 
-                // Determine status
-                let status;
-                if (cpnAlreadyDone) {
-                    status = "Terminé"; // CPN was completed
-                } else if (rdvDate === today) {
-                    status = "En attente"; // RDV is today but CPN not done yet
-                } else if (rdvDate > today) {
-                    status = "Planifié"; // RDV is in the future
-                } else {
-                    continue; // Skip past appointments that were not completed
+                // Vérifier si cette consultation a déjà une CPN terminée
+                const existingCpn = cpnConsultations.find(cpn => cpn.consultationId === consultationDoc.id);
+                if (existingCpn) {
+                    console.log('Consultation déjà traitée, skip');
+                    continue;
                 }
                 
-                // Get grossesse information to find patient
+                // Récupérer les informations de la patiente via la consultation ou CPN
                 let patientInfo = null;
-                if (cpnSnapshot.docs.length > 0) {
-                    const cpnData = cpnSnapshot.docs[0].data();
-                    const grossesseId = cpnData.grossesseId;
-                    
-                    // Get grossesse to find dossier
-                    const grossesseDoc = await getDoc(doc(db, "grossesses", grossesseId));
-                    if (grossesseDoc.exists()) {
-                        const grossesseData = grossesseDoc.data();
-                        const dossierId = grossesseData.dossierId;
+                let moisGrossesseActuel = "Non défini";
+                let grossesseId = consultationData.grossesseId;
+                
+                // Essayer de récupérer les infos via userId de la consultation
+                if (consultationData.userId) {
+                    try {
+                        // Chercher une CPN existante avec ce userId pour récupérer les infos
+                        const cpnQuery = query(
+                            collection(db, "cpns"),
+                            where("userId", "==", consultationData.userId),
+                            fsLimit(1)
+                        );
+                        const cpnSnapshot = await getDocs(cpnQuery);
                         
-                        // Get dossier to find patient
-                        const dossierDoc = await getDoc(doc(db, "dossiers", dossierId));
-                        if (dossierDoc.exists()) {
-                            const dossierData = dossierDoc.data();
-                            const patientId = dossierData.patientId;
-                            
-                            // Get patient to find person
-                            const patientDoc = await getDoc(doc(db, "patientes", patientId));
-                            if (patientDoc.exists()) {
-                                const patientData = patientDoc.data();
-                                const personneId = patientData.personneId;
-                                
-                                // Get person details
-                                const personneDoc = await getDoc(doc(db, "personnes", personneId));
-                                if (personneDoc.exists()) {
-                                    const personneData = personneDoc.data();
-                                    patientInfo = {
-                                        patientId,
-                                        personneId,
-                                        ...personneData
-                                    };
-                                }
-                            }
+                        if (!cpnSnapshot.empty) {
+                            const cpnData = cpnSnapshot.docs[0].data();
+                            grossesseId = cpnData.grossesseId;
+                            console.log('Grossesse trouvée via CPN existante:', grossesseId);
                         }
-                    }
-                } else {
-                    // For consultations without CPN done yet, we need to find the patient differently
-                    // We'll look for active pregnancies and match by consultation userId or other means
-                    // This is a fallback approach - in practice, you might want to store patientId in consultations
-                    
-                    // Get all active pregnancies
-                    const activePregnanciesQuery = query(
-                        collection(db, "grossesses"),
-                        where("statut", "==", "En cours")
-                    );
-                    const activePregnanciesSnapshot = await getDocs(activePregnanciesQuery);
-                    
-                    // For each active pregnancy, check if it matches this consultation
-                    for (const grossesseDoc of activePregnanciesSnapshot.docs) {
-                        const grossesseData = grossesseDoc.data();
-                        const dossierId = grossesseData.dossierId;
-                        
-                        // Get dossier to find patient
-                        const dossierDoc = await getDoc(doc(db, "dossiers", dossierId));
-                        if (dossierDoc.exists()) {
-                            const dossierData = dossierDoc.data();
-                            const patientId = dossierData.patientId;
-                            
-                            // Get patient to find person
-                            const patientDoc = await getDoc(doc(db, "patientes", patientId));
-                            if (patientDoc.exists()) {
-                                const patientData = patientDoc.data();
-                                const personneId = patientData.personneId;
-                                
-                                // Get person details
-                                const personneDoc = await getDoc(doc(db, "personnes", personneId));
-                                if (personneDoc.exists()) {
-                                    const personneData = personneDoc.data();
-                                    patientInfo = {
-                                        patientId,
-                                        personneId,
-                                        grossesseId: grossesseDoc.id,
-                                        ...personneData
-                                    };
-                                    break; // Found a match, exit loop
-                                }
-                            }
-                        }
+                    } catch (error) {
+                        console.log('Erreur lors de la recherche CPN:', error);
                     }
                 }
                 
-                if (patientInfo) {
-                    const cpnConsultation = {
-                        id: consultationDoc.id,
-                        rdv: rdvDate,
-                        status,
-                        diagnostique: consultationData.diagnostique,
-                        dateConsultation: consultationData.dateConsultation,
-                        userId: consultationData.userId,
-                        patient: patientInfo,
-                        cpnDone: cpnAlreadyDone
+                // Si toujours pas de grossesseId, chercher via les grossesses actives
+                if (!grossesseId) {
+                    try {
+                        const grossessesQuery = query(
+                            collection(db, "grossesses"),
+                            where("statut", "==", "En cours"),
+                            fsLimit(1)
+                        );
+                        const grossessesSnapshot = await getDocs(grossessesQuery);
+                        
+                        if (!grossessesSnapshot.empty) {
+                            grossesseId = grossessesSnapshot.docs[0].id;
+                            console.log('Grossesse active trouvée:', grossesseId);
+                        }
+                    } catch (error) {
+                        console.log('Erreur lors de la recherche grossesse active:', error);
+                    }
+                }
+                
+                // Maintenant traiter avec le grossesseId trouvé
+                let grossesseData = null;
+                
+                if (grossesseId) {
+                    // Si grossesseId existe, récupérer les infos complètes
+                    const grossesseDoc = await getDoc(doc(db, "grossesses", grossesseId));
+                    if (!grossesseDoc.exists()) {
+                        console.log('Grossesse introuvable, skip');
+                        continue;
+                    }
+                    
+                    grossesseData = grossesseDoc.data();
+                    const dossierId = grossesseData.dossierId;
+                    
+                    // Get dossier to find patient
+                    const dossierDoc = await getDoc(doc(db, "dossiers", dossierId));
+                    if (!dossierDoc.exists()) continue;
+                    
+                    const dossierData = dossierDoc.data();
+                    const patientId = dossierData.patientId;
+                    
+                    // Get patient to find person
+                    const patientDoc = await getDoc(doc(db, "patientes", patientId));
+                    if (!patientDoc.exists()) continue;
+                    
+                    const patientData = patientDoc.data();
+                    const personneId = patientData.personneId;
+                    
+                    // Get person details
+                    const personneDoc = await getDoc(doc(db, "personnes", personneId));
+                    if (!personneDoc.exists()) continue;
+                    
+                    const personneData = personneDoc.data();
+                    
+                    patientInfo = {
+                        patientId,
+                        personneId,
+                        ...personneData
                     };
                     
-                    cpnConsultations.push(cpnConsultation);
+                    // Calculer l'âge gestationnel
+                    if (grossesseData.moisGrossesse && grossesseData.createdAt) {
+                        const dateCreation = grossesseData.createdAt.toDate();
+                        const maintenant = new Date();
+                        const moisEcoules = Math.floor((maintenant - dateCreation) / (1000 * 60 * 60 * 24 * 30.44));
+                        const moisTotal = parseInt(grossesseData.moisGrossesse) + moisEcoules;
+                        
+                        if (moisTotal <= 9 && moisTotal > 0) {
+                            moisGrossesseActuel = `${moisTotal} mois`;
+                        } else if (moisTotal > 9) {
+                            moisGrossesseActuel = "9+ mois";
+                        }
+                    }
+                    
+                    console.log('Informations patiente récupérées:', patientInfo);
+                } else {
+                    // Si pas de grossesseId trouvé, essayer de récupérer via userId
+                    console.log('Tentative de récupération patiente via userId:', consultationData.userId);
+                    
+                    if (consultationData.userId) {
+                        try {
+                            // Chercher directement dans les personnes via userId (si lié)
+                            const personnesQuery = query(collection(db, "personnes"));
+                            const personnesSnapshot = await getDocs(personnesQuery);
+                            
+                            for (const personneDoc of personnesSnapshot.docs) {
+                                const personneData = personneDoc.data();
+                                // Chercher une patiente liée à cette personne
+                                const patientesQuery = query(
+                                    collection(db, "patientes"),
+                                    where("personneId", "==", personneDoc.id)
+                                );
+                                const patientesSnapshot = await getDocs(patientesQuery);
+                                
+                                if (!patientesSnapshot.empty) {
+                                    const patientData = patientesSnapshot.docs[0].data();
+                                    patientInfo = {
+                                        patientId: patientesSnapshot.docs[0].id,
+                                        personneId: personneDoc.id,
+                                        ...personneData
+                                    };
+                                    console.log('Patiente trouvée via recherche:', patientInfo);
+                                    break;
+                                }
+                            }
+                        } catch (error) {
+                            console.log('Erreur recherche patiente:', error);
+                        }
+                    }
+                    
+                    // Si toujours pas trouvé, créer patiente virtuelle
+                    if (!patientInfo) {
+                        console.log('Aucune patiente trouvée, création patiente virtuelle');
+                        patientInfo = {
+                            patientId: `virtual-patient-${consultationDoc.id}`,
+                            personneId: `virtual-personne-${consultationDoc.id}`,
+                            nom: 'Patiente',
+                            prenom: 'Inconnue',
+                            age: 'N/A',
+                            telephone: 'N/A',
+                            adresse: 'N/A'
+                        };
+                    }
+                }
+                
+                // Déterminer le statut basé uniquement sur la date RDV
+                let status = "Planifié";
+                const rdvDate = consultationData.rdv;
+                
+                if (rdvDate) {
+                    // Convertir la date RDV en objet Date
+                    const rdv = rdvDate.toDate ? rdvDate.toDate() : new Date(rdvDate);
+                    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    const rdvStart = new Date(rdv.getFullYear(), rdv.getMonth(), rdv.getDate());
+                    
+                    console.log('Date RDV:', rdv);
+                    console.log('Date aujourd\'hui:', todayStart);
+                    console.log('Comparaison:', rdvStart.getTime(), 'vs', todayStart.getTime());
+                    
+                    if (rdvStart.getTime() === todayStart.getTime()) {
+                        status = "En attente"; // RDV aujourd'hui
+                        console.log('Statut: En attente (RDV aujourd\'hui)');
+                    } else if (rdvStart.getTime() > todayStart.getTime()) {
+                        status = "Planifié"; // RDV futur
+                        console.log('Statut: Planifié (RDV futur)');
+                    }
+                    // Si RDV passé, on ne crée pas de CPN virtuelle
+                    else {
+                        console.log('RDV passé, skip cette consultation');
+                    }
                 }
             }
             
-            // Sort by RDV date
-            cpnConsultations.sort((a, b) => a.rdv.localeCompare(b.rdv));
-            
             setLoading(false);
             return { success: true, cpnConsultations };
-            
         } catch (error) {
             setError(error);
             setLoading(false);
@@ -457,44 +688,16 @@ export function usePatiente() {
         try {
             setLoading(true);
             
-            const today = new Date().toISOString().split('T')[0];
+            // Get all CPN records directly
+            const cpnsQuery = query(collection(db, "cpns"));
+            const cpnsSnapshot = await getDocs(cpnsQuery);
+            const totalCpnConsultations = cpnsSnapshot.size;
             
-            // Get all CPN consultations
-            const consultationsQuery = query(
-                collection(db, "consultations"),
-                where("type", "==", "CPN"),
-                where("rdv", "!=", null)
-            );
-            const consultationsSnapshot = await getDocs(consultationsQuery);
-            const totalCpnConsultations = consultationsSnapshot.size;
-            
-            let completedCpns = 0;
-            let pendingCpns = 0;
-            let plannedCpns = 0;
-            let overdueCpns = 0;
-            
-            for (const consultationDoc of consultationsSnapshot.docs) {
-                const consultationData = consultationDoc.data();
-                const rdvDate = consultationData.rdv;
-                
-                // Check if CPN was already done for this consultation
-                const cpnQuery = query(
-                    collection(db, "cpns"),
-                    where("consultationId", "==", consultationDoc.id)
-                );
-                const cpnSnapshot = await getDocs(cpnQuery);
-                const cpnAlreadyDone = !cpnSnapshot.empty;
-                
-                if (cpnAlreadyDone) {
-                    completedCpns++;
-                } else if (rdvDate === today) {
-                    pendingCpns++;
-                } else if (rdvDate > today) {
-                    plannedCpns++;
-                } else if (rdvDate < today) {
-                    overdueCpns++;
-                }
-            }
+            // All CPNs in the collection are completed by definition
+            const completedCpns = totalCpnConsultations;
+            const pendingCpns = 0;
+            const plannedCpns = 0;
+            const overdueCpns = 0;
             
             // Get CPN consultations this month
             const currentMonth = new Date();
@@ -502,25 +705,12 @@ export function usePatiente() {
             currentMonth.setHours(0, 0, 0, 0);
             
             const cpnThisMonthQuery = query(
-                collection(db, "consultations"),
-                where("type", "==", "CPN"),
-                where("dateConsultation", ">=", Timestamp.fromDate(currentMonth))
+                collection(db, "cpns"),
+                where("createdAt", ">=", Timestamp.fromDate(currentMonth))
             );
             const cpnThisMonthSnapshot = await getDocs(cpnThisMonthQuery);
             const cpnThisMonth = cpnThisMonthSnapshot.size;
-            
-            // Get completed CPNs this month
-            let completedCpnThisMonth = 0;
-            for (const consultationDoc of cpnThisMonthSnapshot.docs) {
-                const cpnQuery = query(
-                    collection(db, "cpns"),
-                    where("consultationId", "==", consultationDoc.id)
-                );
-                const cpnSnapshot = await getDocs(cpnQuery);
-                if (!cpnSnapshot.empty) {
-                    completedCpnThisMonth++;
-                }
-            }
+            const completedCpnThisMonth = cpnThisMonth; // All CPNs in collection are completed
             
             const stats = {
                 totalCpnConsultations,
@@ -529,13 +719,11 @@ export function usePatiente() {
                 plannedCpns,
                 overdueCpns,
                 cpnThisMonth,
-                completedCpnThisMonth,
-                completionRate: totalCpnConsultations > 0 ? Math.round((completedCpns / totalCpnConsultations) * 100) : 0
+                completedCpnThisMonth
             };
             
             setLoading(false);
             return { success: true, stats };
-            
         } catch (error) {
             setError(error);
             setLoading(false);
