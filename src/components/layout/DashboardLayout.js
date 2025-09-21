@@ -4,13 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import AutoReportNotification from '@/components/ui/AutoReportNotification';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/auth';
+import { useAutoReports } from '@/hooks/useAutoReports';
 
 const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { currentUser, loading } = useAuth();
     const router = useRouter();
+    
+    // Hook pour la génération automatique des rapports mensuels
+    const { notification, closeNotification } = useAutoReports();
 
     // Vérifier l'authentification
     useEffect(() => {
@@ -19,8 +24,14 @@ const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
         }
     }, [currentUser, loading, router]);
 
-    // Afficher un écran de chargement pendant la vérification
-    if (loading) {
+
+    // Ne pas afficher le contenu si l'utilisateur n'est pas authentifié
+    if (!currentUser && !loading) {
+        return null;
+    }
+
+    // Afficher le loader seulement si on charge ET qu'on n'a pas encore d'utilisateur
+    if (loading && !currentUser) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
@@ -29,11 +40,6 @@ const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
                 </div>
             </div>
         );
-    }
-
-    // Ne pas afficher le contenu si l'utilisateur n'est pas authentifié
-    if (!currentUser) {
-        return null;
     }
 
     const toggleSidebar = () => {
@@ -65,6 +71,13 @@ const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
                         <Menu className="w-5 h-5" />
                     </button>
                 )}
+
+                {/* Notification pour les rapports générés automatiquement */}
+                <AutoReportNotification
+                    show={notification.show}
+                    reports={notification.reports}
+                    onClose={closeNotification}
+                />
             </div>
         </div>
     );

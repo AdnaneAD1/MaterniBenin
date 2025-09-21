@@ -45,7 +45,7 @@ export default function GenerateRapportModal({ open, onClose, onGenerate }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
         <button
           className="absolute top-3 right-3 text-gray-500 hover:text-primary text-xl"

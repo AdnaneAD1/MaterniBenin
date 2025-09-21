@@ -77,7 +77,7 @@ export default function AddPregnantWomanModal({ open, onClose, onAdd, editData =
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full relative transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95 max-h-[90vh] overflow-auto">
 {/* Header avec style simple et élégant */}
 <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-3xl p-6 text-white relative">

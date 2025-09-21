@@ -234,37 +234,6 @@ export default function GrossesseDetailPage() {
                                 )}
                             </div>
 
-                            <AddConsultationModal
-                                open={addConsultationOpen}
-                                onClose={() => setAddConsultationOpen(false)}
-                                onAdd={async (form) => {
-                                    const payload = {
-                                        dormirsurmild: !!form.dormirsurmild,
-                                        sulphadoxine: form.sulfadoxine ?? form.sp_nbr ?? '',
-                                        mebendazole: form.mebendazole ?? form.meben ?? '',
-                                        ferfoldine: form.ferfoldine ?? form.fer_foldine ?? '',
-                                        vat: form.vat ?? '',
-                                        garedepiste: !!form.garedepiste ?? !!form.gare_depiste,
-                                        garerefere: !!form.garerefere ?? !!form.gare_refere,
-                                        diagnostique: form.diagnostique ?? form.diagnostique_associe ?? '',
-                                        conduiteTenue: form.conduiteTenue ?? form.conduite_tenue ?? '',
-                                        rdv: form.RDV,
-                                    };
-                                    const res = await addCpn(grossesseId, payload);
-                                    if (res.success) {
-                                        await refresh();
-                                        setAddConsultationOpen(false);
-                                    } else {
-                                        alert(res.error?.message || 'Erreur lors de la création de la consultation');
-                                    }
-                                }}
-                            />
-
-                            <ConsultationModal
-                                open={consultationModalOpen}
-                                onClose={() => setConsultationModalOpen(false)}
-                                consultation={selectedConsultation}
-                            />
                         </div>
 
                         {/* Accouchement */}
@@ -346,41 +315,6 @@ export default function GrossesseDetailPage() {
                                 </div>
                             )}
 
-                            <AddAccouchementModal
-                                open={addAccouchementOpen}
-                                onClose={() => setAddAccouchementOpen(false)}
-                                onAdd={async (form) => {
-                                    const payload = {
-                                        nomMari: form.nomMari,
-                                        prenomMari: form.prenomMari,
-                                        heureAdmission: form.heureAdmission,
-                                        dateAdmission: form.dateAdmission,
-                                        heureAccouchement: form.heureAccouchement,
-                                        dateAccouchement: form.dateAccouchement,
-                                        modeAccouchement: form.modeAccouchement,
-                                        note: form.note,
-                                        enfants: Array.isArray(form.enfants) ? form.enfants.map(e => ({
-                                            nomEnfant: e.nomEnfant,
-                                            prenomEnfant: e.prenomEnfant,
-                                            sexe: e.sexe,
-                                            poids: e.poids,
-                                        })) : [],
-                                    };
-                                    const res = await addChildbirth(grossesseId, payload);
-                                    if (res.success) {
-                                        await refresh();
-                                        setAddAccouchementOpen(false);
-                                    } else {
-                                        alert(res.error?.message || "Erreur lors de l'ajout de l'accouchement");
-                                    }
-                                }}
-                            />
-
-                            <AccouchementModal
-                                open={accouchementModalOpen}
-                                onClose={() => setAccouchementModalOpen(false)}
-                                accouchement={grossesse.accouchement}
-                            />
                         </div>
                     </div>
 
@@ -400,6 +334,75 @@ export default function GrossesseDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Modals - Placés en dehors de la structure des cards pour un positionnement correct */}
+            <AddConsultationModal
+                open={addConsultationOpen}
+                onClose={() => setAddConsultationOpen(false)}
+                onAdd={async (form) => {
+                    const payload = {
+                        dormirsurmild: !!form.dormirsurmild,
+                        sulphadoxine: form.sulfadoxine ?? form.sp_nbr ?? '',
+                        mebendazole: form.mebendazole ?? form.meben ?? '',
+                        ferfoldine: form.ferfoldine ?? form.fer_foldine ?? '',
+                        vat: form.vat ?? '',
+                        garedepiste: !!form.garedepiste ?? !!form.gare_depiste,
+                        garerefere: !!form.garerefere ?? !!form.gare_refere,
+                        diagnostique: form.diagnostique ?? form.diagnostique_associe ?? '',
+                        conduiteTenue: form.conduiteTenue ?? form.conduite_tenue ?? '',
+                        rdv: form.RDV,
+                    };
+                    const res = await addCpn(grossesseId, payload);
+                    if (res.success) {
+                        await refresh();
+                        setAddConsultationOpen(false);
+                    } else {
+                        alert(res.error?.message || 'Erreur lors de la création de la consultation');
+                    }
+                }}
+            />
+
+            <ConsultationModal
+                open={consultationModalOpen}
+                onClose={() => setConsultationModalOpen(false)}
+                consultation={selectedConsultation}
+            />
+
+            <AddAccouchementModal
+                open={addAccouchementOpen}
+                onClose={() => setAddAccouchementOpen(false)}
+                onAdd={async (form) => {
+                    const payload = {
+                        nomMari: form.nomMari,
+                        prenomMari: form.prenomMari,
+                        heureAdmission: form.heureAdmission,
+                        dateAdmission: form.dateAdmission,
+                        heureAccouchement: form.heureAccouchement,
+                        dateAccouchement: form.dateAccouchement,
+                        modeAccouchement: form.modeAccouchement,
+                        note: form.note,
+                        enfants: Array.isArray(form.enfants) ? form.enfants.map(e => ({
+                            nomEnfant: e.nomEnfant,
+                            prenomEnfant: e.prenomEnfant,
+                            sexe: e.sexe,
+                            poids: e.poids,
+                        })) : [],
+                    };
+                    const res = await addChildbirth(grossesseId, payload);
+                    if (res.success) {
+                        await refresh();
+                        setAddAccouchementOpen(false);
+                    } else {
+                        alert(res.error?.message || "Erreur lors de l'ajout de l'accouchement");
+                    }
+                }}
+            />
+
+            <AccouchementModal
+                open={accouchementModalOpen}
+                onClose={() => setAccouchementModalOpen(false)}
+                accouchement={grossesse.accouchement}
+            />
         </DashboardLayout>
     );
 }

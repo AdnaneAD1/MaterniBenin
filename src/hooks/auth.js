@@ -88,7 +88,8 @@ export function useAuth() {
           setLoading(false);
           return cred.user;
         } catch (err) {
-          setError(err.message || "Erreur de connexion");
+          const translatedError = translateError(err);
+          setError(translatedError);
           setLoading(false);
           throw err;
         }
@@ -131,23 +132,39 @@ export function useAuth() {
     const translateError = (error) => {
         const errorMessage = error.message || error.toString();
         
+        // Erreurs d'authentification Firebase
+        if (errorMessage.includes('auth/user-not-found')) {
+            return 'Aucun compte trouvé avec cette adresse email';
+        }
+        if (errorMessage.includes('auth/wrong-password')) {
+            return 'Mot de passe incorrect';
+        }
+        if (errorMessage.includes('auth/invalid-email')) {
+            return 'L\'adresse email n\'est pas valide';
+        }
+        if (errorMessage.includes('auth/user-disabled')) {
+            return 'Ce compte a été désactivé';
+        }
+        if (errorMessage.includes('auth/too-many-requests')) {
+            return 'Trop de tentatives de connexion. Veuillez réessayer plus tard';
+        }
+        if (errorMessage.includes('auth/network-request-failed')) {
+            return 'Erreur de connexion réseau. Vérifiez votre connexion internet';
+        }
+        if (errorMessage.includes('auth/invalid-credential')) {
+            return 'Identifiants invalides. Vérifiez votre email et mot de passe';
+        }
+        if (errorMessage.includes('auth/email-already-in-use')) {
+            return 'Cette adresse email est déjà utilisée par un autre compte';
+        }
+        if (errorMessage.includes('auth/weak-password')) {
+            return 'Le mot de passe est trop faible (minimum 6 caractères)';
+        }
         if (errorMessage.includes('phone number must be a non-empty E.164')) {
             return 'Le numéro de téléphone doit être au format international valide (ex: +22997000001)';
         }
-        if (errorMessage.includes('email-already-in-use')) {
-            return 'Cette adresse email est déjà utilisée par un autre compte';
-        }
-        if (errorMessage.includes('invalid-email')) {
-            return 'L\'adresse email n\'est pas valide';
-        }
-        if (errorMessage.includes('weak-password')) {
-            return 'Le mot de passe est trop faible';
-        }
-        if (errorMessage.includes('network-request-failed')) {
-            return 'Erreur de connexion réseau. Vérifiez votre connexion internet';
-        }
         
-        return errorMessage;
+        return 'Une erreur est survenue lors de la connexion. Veuillez réessayer';
     };
 
     // Créer un utilisateur via l'API Admin (mot de passe généré automatiquement côté serveur)

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useRapport } from '@/hooks/rapport';
 import GenerateRapportModal from '@/components/GenerateRapportModal';
+import AutoReportTester from '@/components/admin/AutoReportTester';
 
 import { 
   Search, 
@@ -434,7 +435,7 @@ export default function RapportsPage() {
 
                 {/* Details Modal */}
                 {selected && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
                             <button
                                 className="absolute top-3 right-3 text-gray-500 hover:text-indigo-600 text-xl"

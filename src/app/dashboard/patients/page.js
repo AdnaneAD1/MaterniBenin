@@ -524,7 +524,7 @@ export default function PatientsPage() {
 
 {/* Modal de détail patiente - Version moderne */}
 {selectedPatient && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full relative transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95">
             {/* Header avec gradient */}
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-3xl p-6 text-white relative overflow-hidden">
