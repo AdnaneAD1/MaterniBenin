@@ -2,7 +2,7 @@
 
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePatiente } from '@/hooks/patientes';
 import { 
     ArrowLeft, 
@@ -22,14 +22,39 @@ export default function PatientDetailPage() {
     const params = useParams();
     const { id } = params;
 
-    const { getPatientDetails } = usePatiente();
+    const { getPatientDetails, updatePatient } = usePatiente();
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        nom: '',
+        prenom: '',
+        age: '',
+        telephone: '',
+        adresse: ''
+    });
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
+
+    // Fonction pour charger les données (utilisée après modification)
+    const loadPatientData = async () => {
+        setLoading(true);
+        try {
+            const res = await getPatientDetails(id);
+            if (res.success) setPatient(res.patient);
+            else setError(res.error || new Error('Patiente introuvable'));
+        } catch (e) {
+            setError(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         let mounted = true;
         (async () => {
+            setLoading(true);
             try {
                 const res = await getPatientDetails(id);
                 if (!mounted) return;
@@ -42,6 +67,7 @@ export default function PatientDetailPage() {
             }
         })();
         return () => { mounted = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     if (loading) {
@@ -117,7 +143,10 @@ export default function PatientDetailPage() {
                                     <Calendar className="w-4 h-4 mr-2" />
                                     Planifier CPN
                                 </button> */}
-                                <button className="flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold">
+                                <button 
+                                    onClick={handleOpenEditModal}
+                                    className="flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-semibold"
+                                >
                                     <Edit className="w-4 h-4 mr-2" />
                                     Modifier
                                 </button>
@@ -213,8 +242,59 @@ export default function PatientDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de modification */}
+            {showEditModal && (
+                <EditPatientModal
+                    patient={patient}
+                    formData={editFormData}
+                    setFormData={setEditFormData}
+                    onClose={handleCloseEditModal}
+                    onSave={handleSavePatient}
+                    saving={saving}
+                    error={saveError}
+                />
+            )}
         </DashboardLayout>
     );
+
+    function handleOpenEditModal() {
+        setEditFormData({
+            nom: patient.nom || '',
+            prenom: patient.prenom || '',
+            age: patient.age || '',
+            telephone: patient.telephone || '',
+            adresse: patient.adresse || ''
+        });
+        setSaveError(null);
+        setShowEditModal(true);
+    }
+
+    function handleCloseEditModal() {
+        setShowEditModal(false);
+        setSaveError(null);
+    }
+
+    async function handleSavePatient() {
+        setSaving(true);
+        setSaveError(null);
+
+        try {
+            const result = await updatePatient(patient.patientId, patient.personneId, editFormData);
+            
+            if (result.success) {
+                // Recharger les données de la patiente
+                await loadPatientData();
+                setShowEditModal(false);
+            } else {
+                setSaveError(result.error?.message || 'Erreur lors de la mise à jour');
+            }
+        } catch (err) {
+            setSaveError(err.message || 'Une erreur est survenue');
+        } finally {
+            setSaving(false);
+        }
+    }
 }
 
 function InfoRow({ label, value, mono }) {
@@ -224,6 +304,184 @@ function InfoRow({ label, value, mono }) {
             <span className={`text-sm text-gray-900 font-medium ${mono ? 'font-mono bg-gray-50 px-2 py-1 rounded' : ''}`}>
                 {value}
             </span>
+        </div>
+    );
+}
+
+function EditPatientModal({ patient, formData, setFormData, onClose, onSave, saving, error }) {
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave();
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-6 rounded-t-2xl">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                <Edit className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold">Modifier la patiente</h2>
+                                <p className="text-blue-100 text-sm">Mettez à jour les informations personnelles</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            disabled={saving}
+                            className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center disabled:opacity-50"
+                        >
+                            <span className="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-medium text-red-800">Erreur</p>
+                                <p className="text-sm text-red-600">{error}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Nom */}
+                        <div>
+                            <label htmlFor="nom" className="block text-sm font-semibold text-gray-700 mb-2">
+                                Nom <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="nom"
+                                name="nom"
+                                value={formData.nom}
+                                onChange={handleChange}
+                                required
+                                disabled={saving}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                placeholder="Nom de famille"
+                            />
+                        </div>
+
+                        {/* Prénom */}
+                        <div>
+                            <label htmlFor="prenom" className="block text-sm font-semibold text-gray-700 mb-2">
+                                Prénom <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="prenom"
+                                name="prenom"
+                                value={formData.prenom}
+                                onChange={handleChange}
+                                required
+                                disabled={saving}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                placeholder="Prénom"
+                            />
+                        </div>
+
+                        {/* Âge */}
+                        <div>
+                            <label htmlFor="age" className="block text-sm font-semibold text-gray-700 mb-2">
+                                Âge <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                id="age"
+                                name="age"
+                                value={formData.age}
+                                onChange={handleChange}
+                                required
+                                min="1"
+                                max="120"
+                                disabled={saving}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                placeholder="Âge"
+                            />
+                        </div>
+
+                        {/* Téléphone */}
+                        <div>
+                            <label htmlFor="telephone" className="block text-sm font-semibold text-gray-700 mb-2">
+                                Téléphone <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="tel"
+                                id="telephone"
+                                name="telephone"
+                                value={formData.telephone}
+                                onChange={handleChange}
+                                required
+                                disabled={saving}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                placeholder="Ex: +229 97 00 00 00"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Adresse */}
+                    <div>
+                        <label htmlFor="adresse" className="block text-sm font-semibold text-gray-700 mb-2">
+                            Adresse
+                        </label>
+                        <textarea
+                            id="adresse"
+                            name="adresse"
+                            value={formData.adresse}
+                            onChange={handleChange}
+                            rows="3"
+                            disabled={saving}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
+                            placeholder="Adresse complète"
+                        />
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={saving}
+                            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Enregistrement...
+                                </>
+                            ) : (
+                                <>
+                                    <Edit className="w-4 h-4" />
+                                    Enregistrer
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }

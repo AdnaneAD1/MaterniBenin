@@ -61,14 +61,6 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Overlay pour mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          onClick={onClose}
-        ></div>
-      )}
-
       <aside
         className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -77,13 +69,13 @@ const Sidebar = ({
         <div className="flex flex-col h-full">
           
           {/* Header avec logo */}
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-4 sm:p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
-                  <Baby className="w-10 h-10 text-white" />
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+                  <Baby className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <span className="text-xl font-bold" style={{color:'#1E88E5'}}>MaterniBénin</span>
+                <span className="text-lg sm:text-xl font-bold" style={{color:'#1E88E5'}}>MaterniBénin</span>
 
               </div>
               
@@ -97,13 +89,13 @@ const Sidebar = ({
           </div>
 
           {/* Profile Section */}
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-4 sm:p-6 border-b border-gray-100">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white">
-                <Heart className="w-6 h-6" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white">
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="ml-3">
-                <p className="text-sm font-semibold text-gray-800">{currentUser?.displayName || currentUser?.firstName + ' ' + currentUser?.lastName || user.name}</p>
+                <p className="text-sm font-semibold text-gray-800 truncate max-w-[150px]">{currentUser?.displayName || currentUser?.firstName + ' ' + currentUser?.lastName || user.name}</p>
                 <p className="text-xs text-gray-500">{currentUser?.role || user.role}</p>
               </div>
             </div>
@@ -120,6 +112,7 @@ const Sidebar = ({
                   <li key={item.name}>
                     <Link
                       href={item.href}
+                      onClick={onClose}
                       className={`flex items-center justify-between px-4 py-3 text-sm rounded-lg transition-all duration-200 group ${
                         isActive
                           ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-500'
@@ -152,7 +145,7 @@ const Sidebar = ({
               <div className="flex items-center">
                 <Phone className="w-5 h-5 mr-2" />
                 <div>
-                  <p className="text-sm font-semibold">Emergency Contact</p>
+                  <p className="text-sm font-semibold">Contact d&apos;urgence</p>
                   <p className="text-sm font-bold">0987654321</p>
                 </div>
               </div>

@@ -101,13 +101,14 @@ export default function CPNPage() {
     // Use real data if available, otherwise fallback
     const displayCpnData = cpnData.length > 0 ? cpnData : [];
 
-    const filters = ['Toutes', 'Terminé', 'Planifié', 'En attente'];
+    const filters = ['Toutes', 'Terminé', 'Planifié', 'En attente', 'En retard'];
 
     const getStatusBadge = (status) => {
         const statusConfig = {
             'Terminé': 'bg-green-100 text-green-800',
             'Planifié': 'bg-blue-100 text-blue-800',
             'En attente': 'bg-yellow-100 text-yellow-800',
+            'En retard': 'bg-red-100 text-red-800',
             'Annulé': 'bg-gray-100 text-gray-800'
         };
         return statusConfig[status] || 'bg-gray-100 text-gray-800';
@@ -118,6 +119,7 @@ export default function CPNPage() {
             case 'Terminé': return <CheckCircle className="w-4 h-4" />;
             case 'Planifié': return <Calendar className="w-4 h-4" />;
             case 'En attente': return <Clock className="w-4 h-4" />;
+            case 'En retard': return <AlertCircle className="w-4 h-4" />;
             case 'Annulé': return <XCircle className="w-4 h-4" />;
             default: return <AlertCircle className="w-4 h-4" />;
         }

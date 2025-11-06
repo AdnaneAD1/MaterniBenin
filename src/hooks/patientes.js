@@ -647,30 +647,71 @@ export function usePatiente() {
                     }
                 }
                 
-                // Déterminer le statut basé uniquement sur la date RDV
+                // Déterminer le statut basé sur la date RDV
                 let status = "Planifié";
                 const rdvDate = consultationData.rdv;
+                let shouldCreateVirtualCpn = false;
                 
-                if (rdvDate) {
+                if (rdvDate && patientInfo) {
                     // Convertir la date RDV en objet Date
                     const rdv = rdvDate.toDate ? rdvDate.toDate() : new Date(rdvDate);
                     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
                     const rdvStart = new Date(rdv.getFullYear(), rdv.getMonth(), rdv.getDate());
                     
+                    // Calculer la différence en jours
+                    const diffTime = rdvStart.getTime() - todayStart.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    
                     console.log('Date RDV:', rdv);
                     console.log('Date aujourd\'hui:', todayStart);
-                    console.log('Comparaison:', rdvStart.getTime(), 'vs', todayStart.getTime());
+                    console.log('Différence en jours:', diffDays);
                     
-                    if (rdvStart.getTime() === todayStart.getTime()) {
-                        status = "En attente"; // RDV aujourd'hui
-                        console.log('Statut: En attente (RDV aujourd\'hui)');
-                    } else if (rdvStart.getTime() > todayStart.getTime()) {
-                        status = "Planifié"; // RDV futur
-                        console.log('Statut: Planifié (RDV futur)');
+                    // Logique des statuts :
+                    // - RDV passé de plus de 7 jours : En retard
+                    // - RDV dans les 7 jours (passé ou futur) : En attente
+                    // - RDV dans plus de 7 jours : Planifié
+                    
+                    if (diffDays < -7) {
+                        status = "En retard"; // RDV dépassé de plus de 7 jours
+                        shouldCreateVirtualCpn = true;
+                        console.log('Statut: En retard (RDV dépassé de', Math.abs(diffDays), 'jours)');
+                    } else if (diffDays >= -7 && diffDays <= 7) {
+                        status = "En attente"; // RDV dans les 7 jours (±7 jours)
+                        shouldCreateVirtualCpn = true;
+                        console.log('Statut: En attente (RDV dans', diffDays, 'jours)');
+                    } else if (diffDays > 7) {
+                        status = "Planifié"; // RDV dans plus de 7 jours
+                        shouldCreateVirtualCpn = true;
+                        console.log('Statut: Planifié (RDV dans', diffDays, 'jours)');
                     }
-                    // Si RDV passé, on ne crée pas de CPN virtuelle
-                    else {
-                        console.log('RDV passé, skip cette consultation');
+                    
+                    // Créer la CPN fictive si les conditions sont remplies
+                    if (shouldCreateVirtualCpn) {
+                        cpnConsultations.push({
+                            id: `virtual-cpn-${consultationDoc.id}`,
+                            patient: patientInfo,
+                            rdv: rdvDate,
+                            visitNumber: null,
+                            status: status,
+                            diagnostique: consultationData.diagnostique || '',
+                            dateConsultation: consultationData.dateConsultation,
+                            userId: consultationData.userId,
+                            cpnDone: false,
+                            consultationId: consultationDoc.id,
+                            ageGestationnel: moisGrossesseActuel,
+                            isVirtual: true,
+                            grossesseId: grossesseId,
+                            // Informations CPN vides pour les CPN fictives
+                            dormirsurmild: false,
+                            spNbr: '',
+                            mebendazole: '',
+                            ferFoldine: '',
+                            vat: '',
+                            gareDepiste: false,
+                            gareRefere: false,
+                            conduiteTenue: ''
+                        });
+                        console.log('CPN fictive créée avec statut:', status);
                     }
                 }
             }
@@ -688,16 +729,23 @@ export function usePatiente() {
         try {
             setLoading(true);
             
-            // Get all CPN records directly
-            const cpnsQuery = query(collection(db, "cpns"));
-            const cpnsSnapshot = await getDocs(cpnsQuery);
-            const totalCpnConsultations = cpnsSnapshot.size;
+            // Récupérer toutes les CPN (réelles et fictives)
+            const cpnResult = await getCpnConsultations();
             
-            // All CPNs in the collection are completed by definition
-            const completedCpns = totalCpnConsultations;
-            const pendingCpns = 0;
-            const plannedCpns = 0;
-            const overdueCpns = 0;
+            if (!cpnResult.success) {
+                setLoading(false);
+                return { success: false, error: cpnResult.error };
+            }
+            
+            const allCpns = cpnResult.cpnConsultations || [];
+            
+            // Compter par statut
+            const completedCpns = allCpns.filter(cpn => cpn.status === 'Terminé').length;
+            const pendingCpns = allCpns.filter(cpn => cpn.status === 'En attente').length;
+            const plannedCpns = allCpns.filter(cpn => cpn.status === 'Planifié').length;
+            const lateCpns = allCpns.filter(cpn => cpn.status === 'En retard').length;
+            const totalCpnConsultations = allCpns.length;
+            const overdueCpns = lateCpns; // Alias pour compatibilité
             
             // Get CPN consultations this month
             const currentMonth = new Date();
@@ -717,6 +765,7 @@ export function usePatiente() {
                 completedCpns,
                 pendingCpns,
                 plannedCpns,
+                lateCpns,
                 overdueCpns,
                 cpnThisMonth,
                 completedCpnThisMonth
