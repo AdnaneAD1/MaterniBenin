@@ -491,13 +491,6 @@ export function usePatiente() {
                 
                 console.log(`\n🔍 Traitement grossesse ${grossesseId}`);
                 
-                // Vérifier si cette grossesse a déjà une CPN terminée
-                const existingCpn = cpnConsultations.find(cpn => cpn.grossesseId === grossesseId);
-                if (existingCpn) {
-                    console.log('✅ Grossesse déjà traitée (CPN terminée), skip');
-                    continue;
-                }
-                
                 try {
                     // 4. Récupérer les CPN de cette grossesse
                     const cpnsQuery = query(
@@ -557,6 +550,14 @@ export function usePatiente() {
                     const { cpnDoc, cpnData, consultationId, consultation } = lastConsultation;
                     
                     console.log(`📌 Dernière consultation avec RDV = ${consultationId}`);
+                    
+                    // Vérifier si une CPN virtuelle existe déjà pour cette consultation
+                    const virtualCpnId = `virtual-cpn-${consultationId}`;
+                    const existingVirtualCpn = cpnConsultations.find(cpn => cpn.id === virtualCpnId);
+                    if (existingVirtualCpn) {
+                        console.log('⚠️ CPN virtuelle déjà créée pour cette consultation, skip');
+                        continue;
+                    }
                     
                     // 9. Récupérer les informations de la patiente
                     let patientInfo = null;
