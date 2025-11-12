@@ -123,7 +123,7 @@ export function usePatiente() {
                 ferfoldine: cpn.ferfoldine ?? '',
                 vat: cpn.vat ?? '',
                 garedepiste: cpn.gare_depiste ?? false,
-                garerefere: cpn.garere_fere ?? false,
+                garerefere: cpn.gare_refere ?? false,
                 conduiteTenue: cpn.conduiteTenue ?? '',
                 grossesseId: grossesseId,
                 consultationId: conRef.id,
