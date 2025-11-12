@@ -68,15 +68,18 @@ class SMSService {
     
     // Cas 2: Numéro commence par 0 (format local béninois)
     if (cleaned.startsWith('0')) {
-      const localPart = cleaned.substring(1);
-      // Accepter 8 ou 9 chiffres après le 0
-      if (localPart.length === 8 || localPart.length === 9) {
-        return '+229' + localPart;
+      // Format béninois : 01XXXXXXXX (10 chiffres) ou 0XXXXXXXX (9 chiffres)
+      if (cleaned.length === 10 && cleaned.startsWith('01')) {
+        // Enlever les 2 premiers chiffres (01) pour obtenir 8 chiffres
+        return '+229' + cleaned.substring(2);
+      } else if (cleaned.length === 9) {
+        // Enlever le 0 initial pour obtenir 8 chiffres
+        return '+229' + cleaned.substring(1);
       }
     }
     
-    // Cas 3: Numéro sans 0 (8 ou 9 chiffres)
-    if (cleaned.length === 8 || cleaned.length === 9) {
+    // Cas 3: Numéro sans 0 (8 chiffres uniquement)
+    if (cleaned.length === 8) {
       return '+229' + cleaned;
     }
     
@@ -106,6 +109,16 @@ class SMSService {
       
       if (!formattedPhone) {
         throw new Error('Numéro de téléphone invalide');
+      }
+      
+      // Vérifier que le numéro destinataire n'est pas le même que le numéro Twilio
+      if (formattedPhone === this.phoneNumber) {
+        console.warn(`⚠️ Tentative d'envoi SMS au même numéro que Twilio: ${formattedPhone}`);
+        return {
+          success: false,
+          error: 'Numéro destinataire identique au numéro Twilio',
+          skipped: true
+        };
       }
 
       const result = await this.client.messages.create({
