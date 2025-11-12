@@ -234,10 +234,16 @@ export default function Dashboard() {
                   const nom = item.patient?.nom || '';
                   const prenom = item.patient?.prenom || '';
                   const initials = `${(prenom[0]||'').toUpperCase()}${(nom[0]||'').toUpperCase()}` || 'PN';
-                  const dateStr = item.dateConsultation ? (() => {
+                  const dateStr = (() => {
+                    // Pour les CPN terminées (non virtuelles), afficher dateConsultation
+                    // Pour les CPN virtuelles, afficher rdv
+                    const dateToDisplay = item.isVirtual ? item.rdv : item.dateConsultation;
+                    
+                    if (!dateToDisplay) return 'Non définie';
+                    
                     try {
                         // Gérer les dates Firestore (avec toDate) et les dates normales
-                        const dateObj = item.dateConsultation.toDate ? item.dateConsultation.toDate() : new Date(item.dateConsultation);
+                        const dateObj = dateToDisplay.toDate ? dateToDisplay.toDate() : new Date(dateToDisplay);
                         const dateStr = dateObj.toLocaleDateString('fr-FR');
                         const timeStr = dateObj.toLocaleTimeString('fr-FR', { 
                             hour: '2-digit', 
@@ -247,7 +253,7 @@ export default function Dashboard() {
                     } catch (error) {
                         return 'Date invalide';
                     }
-                })() : 'Non définie';
+                  })();
                   const statut = item.status;
                   const getBadgeClass = (status) => {
                     switch(status) {

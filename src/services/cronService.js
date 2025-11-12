@@ -15,77 +15,161 @@ class CronService {
   }
 
   /**
-   * Récupérer toutes les CPN à venir et en retard
+   * Récupérer toutes les CPN à venir et en retard (uniquement pour grossesses en cours)
    */
   async getUpcomingAndLateCpns() {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Récupérer toutes les consultations avec RDV
-      const consultationsQuery = query(
-        collection(db, 'consultations'),
-        where('type', '==', 'CPN'),
-        where('rdv', '!=', null)
+      console.log('🔍 Récupération des CPN pour grossesses en cours...');
+      
+      // 1. Récupérer UNIQUEMENT les grossesses en cours
+      const grossessesQuery = query(
+        collection(db, 'grossesses'),
+        where('statut', '==', 'en_cours')  // ✅ Filtrer par statut
       );
-
-      const consultationsSnapshot = await getDocs(consultationsQuery);
+      
+      const grossessesSnapshot = await getDocs(grossessesQuery);
+      console.log(`📋 ${grossessesSnapshot.size} grossesses en cours trouvées`);
+      
       const cpnList = [];
 
-      for (const consultationDoc of consultationsSnapshot.docs) {
-        const consultation = consultationDoc.data();
-        const rdv = consultation.rdv.toDate();
+      // 2. Pour chaque grossesse en cours
+      for (const grossesseDoc of grossessesSnapshot.docs) {
+        const grossesse = grossesseDoc.data();
+        const grossesseId = grossesseDoc.id;
         
-        // Calculer les jours jusqu'au RDV
-        const diffTime = rdv.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        // Récupérer les infos de la patiente via la grossesse
         try {
-          // Trouver la CPN correspondante
-          const cpnQuery = query(
+          // 3. Récupérer les CPN de cette grossesse
+          const cpnsQuery = query(
             collection(db, 'cpns'),
-            where('consultationId', '==', consultationDoc.id)
+            where('grossesseId', '==', grossesseId)
           );
-          const cpnSnapshot = await getDocs(cpnQuery);
+          const cpnsSnapshot = await getDocs(cpnsQuery);
           
-          if (cpnSnapshot.empty) continue;
+          if (cpnsSnapshot.empty) continue;
           
-          const cpnDoc = cpnSnapshot.docs[0];
-          const cpnData = cpnDoc.data();
-          const grossesseId = cpnData.grossesseId;
-
-          // Récupérer la grossesse
-          const grossesseDoc = await getDocs(
-            query(collection(db, 'grossesses'), where('__name__', '==', grossesseId))
-          );
+          // 4. Récupérer toutes les consultations avec RDV pour cette grossesse
+          const consultationsWithRdv = [];
           
-          if (grossesseDoc.empty) continue;
+          for (const cpnDoc of cpnsSnapshot.docs) {
+            const cpnData = cpnDoc.data();
+            const consultationId = cpnData.consultationId;
+            
+            if (!consultationId) continue;
+            
+            // Récupérer la consultation
+            const consultationQuery = query(
+              collection(db, 'consultations'),
+              where('__name__', '==', consultationId)
+            );
+            const consultationSnapshot = await getDocs(consultationQuery);
+            
+            if (consultationSnapshot.empty) continue;
+            
+            const consultation = consultationSnapshot.docs[0].data();
+            
+            // Vérifier que la consultation a un RDV non vide
+            if (!consultation.rdv || consultation.rdv === '') continue;
+            
+            // Ajouter à la liste temporaire avec la date de création
+            consultationsWithRdv.push({
+              cpnDoc,
+              cpnData,
+              consultationId,
+              consultation,
+              createdAt: consultation.createdAt || consultation.dateConsultation
+            });
+          }
           
-          const grossesse = grossesseDoc.docs[0].data();
+          // 5. Si aucune consultation avec RDV, passer à la grossesse suivante
+          if (consultationsWithRdv.length === 0) continue;
+          
+          // 6. Trier par date de création (la plus récente en premier)
+          consultationsWithRdv.sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+            return dateB.getTime() - dateA.getTime(); // Décroissant (plus récent en premier)
+          });
+          
+          // 7. Prendre uniquement la dernière consultation (la plus récente)
+          const lastConsultation = consultationsWithRdv[0];
+          const { cpnDoc, cpnData, consultationId, consultation } = lastConsultation;
+          
+          console.log(`📌 Grossesse ${grossesseId}: Dernière consultation avec RDV = ${consultationId}`);
+          
+          // 8. Convertir la date RDV
+          let rdv;
+          if (consultation.rdv.toDate) {
+            rdv = consultation.rdv.toDate();
+          } else if (typeof consultation.rdv === 'string') {
+            rdv = new Date(consultation.rdv);
+          } else {
+            console.log('⚠️ Format RDV non supporté pour consultation', consultationId);
+            continue;
+          }
+          
+          // Vérifier que la date est valide
+          if (isNaN(rdv.getTime())) {
+            console.log('⚠️ Date RDV invalide pour consultation', consultationId);
+            continue;
+          }
+          
+          // 9. Calculer les jours jusqu'au RDV
+          const diffTime = rdv.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          // 10. Récupérer les infos de la patiente
           const dossierId = grossesse.dossierId;
-
+          
           // Récupérer le dossier
-          const dossierDoc = await getDocs(
-            query(collection(db, 'dossiers'), where('__name__', '==', dossierId))
+          const dossierQuery = query(
+            collection(db, 'dossiers'),
+            where('__name__', '==', dossierId)
           );
+          const dossierSnapshot = await getDocs(dossierQuery);
           
-          if (dossierDoc.empty) continue;
+          if (dossierSnapshot.empty) continue;
           
-          const dossier = dossierDoc.docs[0].data();
+          const dossier = dossierSnapshot.docs[0].data();
           const patientId = dossier.patientId;
-
+          
           // Récupérer la patiente
-          const patientDoc = await getDocs(
-            query(collection(db, 'patientes'), where('__name__', '==', patientId))
+          const patientQuery = query(
+            collection(db, 'patientes'),
+            where('__name__', '==', patientId)
           );
+          const patientSnapshot = await getDocs(patientQuery);
           
-          if (patientDoc.empty) continue;
+          if (patientSnapshot.empty) continue;
           
-          const patient = patientDoc.docs[0].data();
+          const patient = patientSnapshot.docs[0].data();
+          
+          // Récupérer les infos de la personne
+          const personneId = patient.personneId;
+          const personneQuery = query(
+            collection(db, 'personnes'),
+            where('__name__', '==', personneId)
+          );
+          const personneSnapshot = await getDocs(personneQuery);
+          
+          let nom = patient.nom || 'N/A';
+          let prenom = patient.prenom || 'N/A';
+          let telephone = patient.telephone || '';
+          let email = patient.email || '';
+          
+          if (!personneSnapshot.empty) {
+            const personne = personneSnapshot.docs[0].data();
+            nom = personne.nom || nom;
+            prenom = personne.prenom || prenom;
+            telephone = personne.telephone || telephone;
+            email = personne.email || email;
+          }
 
+          // 11. Ajouter à la liste (une seule CPN par grossesse)
           cpnList.push({
-            id: consultationDoc.id,
+            id: consultationId,
             cpnId: cpnDoc.id,
             cpnLabel: cpnData.cpn,
             rdv: consultation.rdv,
@@ -94,20 +178,23 @@ class CronService {
             grossesseId,
             patient: {
               patientId,
-              nom: patient.nom,
-              prenom: patient.prenom,
-              telephone: patient.telephone,
-              email: patient.email
+              nom,
+              prenom,
+              telephone,
+              email
             }
           });
+          
+          console.log(`✅ CPN ajoutée: ${prenom} ${nom} - RDV dans ${diffDays} jours`);
         } catch (error) {
-          console.error('Erreur récupération données CPN:', error);
+          console.error(`❌ Erreur traitement grossesse ${grossesseId}:`, error);
         }
       }
 
+      console.log(`📊 Total: ${cpnList.length} CPN avec RDV trouvées`);
       return cpnList;
     } catch (error) {
-      console.error('Erreur récupération CPN:', error);
+      console.error('❌ Erreur récupération CPN:', error);
       return [];
     }
   }

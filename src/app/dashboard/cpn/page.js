@@ -56,6 +56,7 @@ export default function CPNPage() {
                         diagnostique: cpn.diagnostique,
                         rdv: cpn.rdv,
                         userId: cpn.userId,
+                        moisGrossesse: cpn.ageGestationnel,
                         patient: cpn.patient,
                         avatar: `${(cpn.patient.prenom || 'P').charAt(0)}${(cpn.patient.nom || 'P').charAt(0)}`,
                         color: getRandomColor(),
@@ -326,11 +327,11 @@ export default function CPNPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center space-x-2">
                                                 <div className="text-sm text-gray-900">
-                                                    CPN
+                                                    {cpn.visitNumber || 'CPN'}
                                                 </div>
                                                 {cpn.isVirtual && (
                                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                                        CPN
+                                                        Virtuelle
                                                     </span>
                                                 )}
                                             </div>
@@ -342,10 +343,18 @@ export default function CPNPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {cpn.rdv ? (() => {
+                                                {(() => {
+                                                    // Pour les CPN terminées (non virtuelles), afficher dateConsultation
+                                                    // Pour les CPN virtuelles, afficher rdv
+                                                    const dateToDisplay = cpn.isVirtual ? cpn.rdv : cpn.date;
+                                                    
+                                                    if (!dateToDisplay) {
+                                                        return 'Non définie';
+                                                    }
+                                                    
                                                     try {
                                                         // Gérer les dates Firestore (avec toDate) et les dates normales
-                                                        const dateObj = cpn.rdv.toDate ? cpn.rdv.toDate() : new Date(cpn.rdv);
+                                                        const dateObj = dateToDisplay.toDate ? dateToDisplay.toDate() : new Date(dateToDisplay);
                                                         const dateStr = dateObj.toLocaleDateString('fr-FR');
                                                         const timeStr = dateObj.toLocaleTimeString('fr-FR', { 
                                                             hour: '2-digit', 
@@ -355,7 +364,7 @@ export default function CPNPage() {
                                                     } catch (error) {
                                                         return 'Date invalide';
                                                     }
-                                                })() : 'Non définie'}
+                                                })()}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -506,27 +515,23 @@ export default function CPNPage() {
                                             <span>{selectedCpn.id}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="font-medium text-gray-700">Date RDV :</span>
-                                            <span>{selectedCpn.rdv ? (() => {
+                                            <span className="font-medium text-gray-700">{selectedCpn.isVirtual ? 'Date RDV :' : 'Date consultation :'}</span>
+                                            <span>{(() => {
+                                                const dateToDisplay = selectedCpn.isVirtual ? selectedCpn.rdv : selectedCpn.date;
+                                                if (!dateToDisplay) return 'Non définie';
                                                 try {
-                                                    const dateObj = selectedCpn.rdv.toDate ? selectedCpn.rdv.toDate() : new Date(selectedCpn.rdv);
+                                                    const dateObj = dateToDisplay.toDate ? dateToDisplay.toDate() : new Date(dateToDisplay);
                                                     return dateObj.toLocaleDateString('fr-FR') + ' à ' + dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                                                 } catch (error) {
                                                     return 'Date invalide';
                                                 }
-                                            })() : 'Non définie'}</span>
+                                            })()}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="font-medium text-gray-700">Statut :</span>
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(selectedCpn.status)}`}>
                                                 {getStatusIcon(selectedCpn.status)}
                                                 <span className="ml-1">{selectedCpn.status}</span>
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="font-medium text-gray-700">CPN Effectuée :</span>
-                                            <span className={selectedCpn.cpnDone ? 'text-green-600' : 'text-red-600'}>
-                                                {selectedCpn.cpnDone ? 'Oui' : 'Non'}
                                             </span>
                                         </div>
                                         {selectedCpn.visitNumber && (

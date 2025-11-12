@@ -652,19 +652,32 @@ export function usePatiente() {
                 const rdvDate = consultationData.rdv;
                 let shouldCreateVirtualCpn = false;
                 
-                if (rdvDate && patientInfo) {
-                    // Convertir la date RDV en objet Date
-                    const rdv = rdvDate.toDate ? rdvDate.toDate() : new Date(rdvDate);
-                    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    const rdvStart = new Date(rdv.getFullYear(), rdv.getMonth(), rdv.getDate());
-                    
-                    // Calculer la différence en jours
-                    const diffTime = rdvStart.getTime() - todayStart.getTime();
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    console.log('Date RDV:', rdv);
-                    console.log('Date aujourd\'hui:', todayStart);
-                    console.log('Différence en jours:', diffDays);
+                console.log('=== Traitement consultation', consultationDoc.id, '===');
+                console.log('rdvDate:', rdvDate, 'Type:', typeof rdvDate);
+                console.log('patientInfo:', patientInfo ? 'OK' : 'NULL');
+                
+                // Vérifier que rdvDate existe, n'est pas vide, et que patientInfo existe
+                if (rdvDate && rdvDate !== '' && patientInfo) {
+                    try {
+                        // Convertir la date RDV en objet Date
+                        const rdv = rdvDate.toDate ? rdvDate.toDate() : new Date(rdvDate);
+                        
+                        // Vérifier que la date est valide
+                        if (isNaN(rdv.getTime())) {
+                            console.log('❌ Date RDV invalide, skip');
+                            continue;
+                        }
+                        
+                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        const rdvStart = new Date(rdv.getFullYear(), rdv.getMonth(), rdv.getDate());
+                        
+                        // Calculer la différence en jours
+                        const diffTime = rdvStart.getTime() - todayStart.getTime();
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        console.log('✅ Date RDV valide:', rdv);
+                        console.log('Date aujourd\'hui:', todayStart);
+                        console.log('Différence en jours:', diffDays);
                     
                     // Logique des statuts :
                     // - RDV passé de plus de 7 jours : En retard
@@ -711,8 +724,15 @@ export function usePatiente() {
                             gareRefere: false,
                             conduiteTenue: ''
                         });
-                        console.log('CPN fictive créée avec statut:', status);
+                        console.log('✅ CPN fictive créée avec statut:', status);
+                    } else {
+                        console.log('⚠️ shouldCreateVirtualCpn = false, pas de création');
                     }
+                    } catch (error) {
+                        console.log('❌ Erreur traitement date RDV:', error);
+                    }
+                } else {
+                    console.log('⚠️ Condition non remplie - rdvDate:', rdvDate, 'patientInfo:', !!patientInfo);
                 }
             }
             
