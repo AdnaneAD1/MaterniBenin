@@ -62,7 +62,7 @@ class SMSService {
       // Vérifier que le numéro après 229 a 8 chiffres
       const localPart = cleaned.substring(3);
       if (localPart.length === 8) {
-        return cleaned;
+        return '+' + cleaned;
       }
     }
     
@@ -71,16 +71,16 @@ class SMSService {
       // Format béninois : 01XXXXXXXX (10 chiffres) ou 0XXXXXXXX (9 chiffres)
       if (cleaned.length === 10 && cleaned.startsWith('01')) {
         // Enlever les 2 premiers chiffres (01) pour obtenir 8 chiffres
-        return '229' + cleaned.substring(2);
+        return '+229' + cleaned.substring(2);
       } else if (cleaned.length === 9) {
         // Enlever le 0 initial pour obtenir 8 chiffres
-        return '229' + cleaned.substring(1);
+        return '+229' + cleaned.substring(1);
       }
     }
     
     // Cas 3: Numéro sans 0 (8 chiffres uniquement)
     if (cleaned.length === 8) {
-      return '229' + cleaned;
+      return '+229' + cleaned;
     }
     
     // Si aucun format reconnu, logger l'erreur et retourner null
