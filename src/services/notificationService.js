@@ -96,7 +96,9 @@ class NotificationService {
    */
   async createLateCpnNotification(cpnData) {
     const { patient, rdv, cpnLabel, userId } = cpnData;
-    const daysLate = Math.abs(Math.floor((new Date() - rdv.toDate()) / (1000 * 60 * 60 * 24)));
+    // rdv est déjà un objet Date
+    const rdvDate = rdv instanceof Date ? rdv : (rdv.toDate ? rdv.toDate() : new Date(rdv));
+    const daysLate = Math.abs(Math.floor((new Date() - rdvDate) / (1000 * 60 * 60 * 24)));
 
     return this.createNotification({
       type: 'cpn_late',

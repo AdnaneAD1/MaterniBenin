@@ -98,7 +98,8 @@ class EmailService {
    */
   createCpnReminderTemplate(cpnData, daysUntil) {
     const { patient, rdv, cpnLabel } = cpnData;
-    const rdvDate = rdv.toDate();
+    // rdv est déjà un objet Date
+    const rdvDate = rdv instanceof Date ? rdv : (rdv.toDate ? rdv.toDate() : new Date(rdv));
     const dateStr = rdvDate.toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -197,7 +198,8 @@ class EmailService {
       };
     }
 
-    const rdvDate = rdv.toDate();
+    // rdv est déjà un objet Date
+    const rdvDate = rdv instanceof Date ? rdv : (rdv.toDate ? rdv.toDate() : new Date(rdv));
     const dateStr = rdvDate.toLocaleDateString('fr-FR');
     const timeStr = rdvDate.toLocaleTimeString('fr-FR', {
       hour: '2-digit',

@@ -172,7 +172,8 @@ class CronService {
             id: consultationId,
             cpnId: cpnDoc.id,
             cpnLabel: cpnData.cpn,
-            rdv: consultation.rdv,
+            rdv: rdv, // Utiliser l'objet Date déjà converti
+            rdvOriginal: consultation.rdv, // Garder l'original pour référence
             diffDays,
             userId: consultation.userId,
             grossesseId,

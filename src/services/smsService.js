@@ -66,23 +66,18 @@ class SMSService {
       }
     }
     
-    // Cas 2: Numéro commence par 0 (format local béninois : 0160807271)
+    // Cas 2: Numéro commence par 0 (format local béninois)
     if (cleaned.startsWith('0')) {
       const localPart = cleaned.substring(1);
-      // Vérifier que c'est bien 8 chiffres après le 0
-      if (localPart.length === 8) {
+      // Accepter 8 ou 9 chiffres après le 0
+      if (localPart.length === 8 || localPart.length === 9) {
         return '+229' + localPart;
       }
     }
     
-    // Cas 3: Numéro sans 0 (format rare : 60807271)
-    if (cleaned.length === 8) {
+    // Cas 3: Numéro sans 0 (8 ou 9 chiffres)
+    if (cleaned.length === 8 || cleaned.length === 9) {
       return '+229' + cleaned;
-    }
-    
-    // Cas 4: Numéro avec 9 chiffres (peut-être 0 + 8 chiffres collés)
-    if (cleaned.length === 9 && cleaned.startsWith('0')) {
-      return '+229' + cleaned.substring(1);
     }
     
     // Si aucun format reconnu, logger l'erreur et retourner null
@@ -152,7 +147,8 @@ class SMSService {
       };
     }
 
-    const rdvDate = rdv.toDate();
+    // rdv est déjà un objet Date
+    const rdvDate = rdv instanceof Date ? rdv : (rdv.toDate ? rdv.toDate() : new Date(rdv));
     const dateStr = rdvDate.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
