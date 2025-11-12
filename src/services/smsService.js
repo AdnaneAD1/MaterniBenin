@@ -122,7 +122,7 @@ class SMSService {
       }
 
       // ⚠️ MODE TEST : Remplacer le numéro par défaut pour contourner limitation compte essai
-      const testNumber = '+18777804236';
+      const testNumber = '+22960807271';
       console.log(`📱 Mode test: Envoi vers ${testNumber} au lieu de ${formattedPhone}`);
 
       const result = await this.client.messages.create({
