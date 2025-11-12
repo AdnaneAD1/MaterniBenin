@@ -42,27 +42,52 @@ class SMSService {
   }
 
   /**
-   * Formater le numéro de téléphone au format international
+   * Formater le numéro de téléphone au format international Twilio
+   * Formats acceptés en entrée :
+   * - 0160807271 (format local avec 0)
+   * - 60807271 (format local sans 0)
+   * - +22960807271 (déjà au format international)
+   * 
    * @param {string} phone - Numéro de téléphone
-   * @returns {string} - Numéro formaté
+   * @returns {string} - Numéro formaté au format +229XXXXXXXX
    */
   formatPhoneNumber(phone) {
     if (!phone) return null;
     
-    // Nettoyer le numéro
-    let cleaned = phone.replace(/\D/g, '');
+    // Nettoyer le numéro (enlever espaces, tirets, parenthèses, etc.)
+    let cleaned = phone.toString().replace(/\D/g, '');
     
-    // Si commence par 0, remplacer par +229 (Bénin)
+    // Cas 1: Numéro commence par 229 (indicatif Bénin déjà présent)
+    if (cleaned.startsWith('229')) {
+      // Vérifier que le numéro après 229 a 8 chiffres
+      const localPart = cleaned.substring(3);
+      if (localPart.length === 8) {
+        return '+' + cleaned;
+      }
+    }
+    
+    // Cas 2: Numéro commence par 0 (format local béninois : 0160807271)
     if (cleaned.startsWith('0')) {
-      cleaned = '229' + cleaned.substring(1);
+      const localPart = cleaned.substring(1);
+      // Vérifier que c'est bien 8 chiffres après le 0
+      if (localPart.length === 8) {
+        return '+229' + localPart;
+      }
     }
     
-    // Ajouter + si pas présent
-    if (!cleaned.startsWith('+')) {
-      cleaned = '+' + cleaned;
+    // Cas 3: Numéro sans 0 (format rare : 60807271)
+    if (cleaned.length === 8) {
+      return '+229' + cleaned;
     }
     
-    return cleaned;
+    // Cas 4: Numéro avec 9 chiffres (peut-être 0 + 8 chiffres collés)
+    if (cleaned.length === 9 && cleaned.startsWith('0')) {
+      return '+229' + cleaned.substring(1);
+    }
+    
+    // Si aucun format reconnu, logger l'erreur et retourner null
+    console.warn(`⚠️ Format de numéro non reconnu: ${phone} (nettoyé: ${cleaned})`);
+    return null;
   }
 
   /**
