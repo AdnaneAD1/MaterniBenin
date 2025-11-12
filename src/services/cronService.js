@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { db } from '@/firebase/firebase';
 import notificationService from './notificationService';
 import smsService from './smsService';
 import emailService from './emailService';

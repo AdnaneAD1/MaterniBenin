@@ -10,7 +10,7 @@ import {
   limit,
   Timestamp 
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { db } from '@/firebase/firebase';
 
 /**
  * Service de gestion des notifications in-app
