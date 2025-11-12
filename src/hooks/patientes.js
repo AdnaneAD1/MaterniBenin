@@ -106,8 +106,8 @@ export function usePatiente() {
             const conRef = await addDoc(collection(db, "consultations"), {
                 type: "CPN",
                 dateConsultation: Timestamp.now(),
-                diagnostique: cpn.diagnostique,
-                rdv: cpn.rdv,
+                diagnostique: cpn.diagnostique ?? '',
+                rdv: cpn.rdv ?? '',
                 userId: currentUser.uid,
                 createdAt: Timestamp.now(),
             });
@@ -117,14 +117,14 @@ export function usePatiente() {
             const cpnId = await generateCpnId();
             const cpnData = {
                 cpn: "CPN " + (allcpn.docs.length + 1),
-                dormirsurmild: cpn.dormirsurmild,
-                sulfadoxine: cpn.sulphadoxine,
-                mebendazole: cpn.mebendazole,
-                ferfoldine: cpn.ferfoldine,
-                vat: cpn.vat,
-                garedepiste: cpn.gare_depiste,
-                garerefere: cpn.garere_fere,
-                conduiteTenue: cpn.conduiteTenue,
+                dormirsurmild: cpn.dormirsurmild ?? false,
+                sulfadoxine: cpn.sulphadoxine ?? '',
+                mebendazole: cpn.mebendazole ?? '',
+                ferfoldine: cpn.ferfoldine ?? '',
+                vat: cpn.vat ?? '',
+                garedepiste: cpn.gare_depiste ?? false,
+                garerefere: cpn.garere_fere ?? false,
+                conduiteTenue: cpn.conduiteTenue ?? '',
                 grossesseId: grossesseId,
                 consultationId: conRef.id,
                 createdAt: Timestamp.now(),
