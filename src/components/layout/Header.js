@@ -3,30 +3,53 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Search, 
   Bell, 
   Settings, 
   MessageSquare, 
-  User,
-  Menu,
-  Home,
-  ChevronRight
+  Menu
 } from 'lucide-react';
 import { useAuth } from '@/hooks/auth';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const Header = ({ title, onToggleSidebar }) => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Nouvelle patiente ajoutée', time: '10:30' },
-    { id: 2, message: 'CPN à planifier pour Mme Koffi', time: 'Il y a 2h' },
-    { id: 3, message: 'Rapport mensuel disponible', time: 'Il y a 1j' },
-  ]);
-
   const [showNotifications, setShowNotifications] = useState(false);
-  const [activeTimeFilter, setActiveTimeFilter] = useState('Today');
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Hook de notifications
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const { currentUser, loading } = useAuth();
+  
+  // Fonction pour formater le temps
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp.seconds * 1000);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'A l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins}min`;
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays === 1) return 'Hier';
+    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    return date.toLocaleDateString('fr-FR');
+  };
+  
+  // Fonction pour gérer le clic sur une notification
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+    setShowNotifications(false);
+  };
+  
+  // Fonction pour marquer toutes comme lues
+  const handleMarkAllRead = async () => {
+    await markAllAsRead();
+  };
   const displayName = (currentUser?.displayName 
     || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() 
     || currentUser?.email 
@@ -83,7 +106,11 @@ const Header = ({ title, onToggleSidebar }) => {
               onClick={() => setShowNotifications(!showNotifications)}
             >
               <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] sm:min-w-[20px] sm:h-[20px] bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded-full flex items-center justify-center px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {/* User Profile */}
@@ -102,23 +129,70 @@ const Header = ({ title, onToggleSidebar }) => {
 
       {/* Notifications Dropdown */}
       {showNotifications && (
-        <div className="fixed sm:absolute right-2 sm:right-6 top-14 sm:top-16 w-[calc(100vw-1rem)] sm:w-80 max-w-md bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-          <div className="p-3 sm:p-4 border-b border-gray-200">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Notifications</h3>
+        <div className="fixed sm:absolute right-2 sm:right-6 top-14 sm:top-16 w-[calc(100vw-1rem)] sm:w-96 max-w-md bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+          <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <p className="text-xs text-gray-500">{unreadCount} non lue(s)</p>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="text-xs text-blue-500 hover:text-blue-600 font-medium"
+              >
+                Tout marquer lu
+              </button>
+            )}
           </div>
-          <div className="max-h-64 overflow-y-auto">
-            {notifications.map((notification) => (
-              <div key={notification.id} className="p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50">
-                <p className="text-sm text-gray-900">{notification.message}</p>
-                <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+          <div className="max-h-96 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Bell className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">Aucune notification</p>
               </div>
-            ))}
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                    !notification.read ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
+                      notification.priority === 'urgent' ? 'bg-red-500' :
+                      notification.priority === 'high' ? 'bg-orange-500' :
+                      'bg-blue-500'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatTime(notification.createdAt)}</p>
+                    </div>
+                    {!notification.read && (
+                      <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full" />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div className="p-3 sm:p-4">
-            <button className="w-full text-center text-sm text-blue-500 hover:text-blue-600 font-medium">
-              Voir toutes les notifications
-            </button>
-          </div>
+          {notifications.length > 0 && (
+            <div className="p-3 sm:p-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowNotifications(false);
+                  router.push('/dashboard/notifications');
+                }}
+                className="w-full text-center text-sm text-blue-500 hover:text-blue-600 font-medium"
+              >
+                Voir toutes les notifications
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>
