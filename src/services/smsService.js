@@ -57,21 +57,12 @@ class SMSService {
     // Nettoyer le numéro (enlever espaces, tirets, parenthèses, etc.)
     let cleaned = phone.toString().replace(/\D/g, '');
     
-    // Fonction pour formater avec espaces : +229 XX XX XX XX
-    const formatWithSpaces = (localNumber) => {
-      // localNumber doit avoir 8 chiffres
-      if (localNumber.length !== 8) return null;
-      
-      // Format: +229 XX XX XX XX
-      return `+229 ${localNumber.substring(0, 2)} ${localNumber.substring(2, 4)} ${localNumber.substring(4, 6)} ${localNumber.substring(6, 8)}`;
-    };
-    
     // Cas 1: Numéro commence par 229 (indicatif Bénin déjà présent)
     if (cleaned.startsWith('229')) {
       // Vérifier que le numéro après 229 a 8 chiffres
       const localPart = cleaned.substring(3);
       if (localPart.length === 8) {
-        return formatWithSpaces(localPart);
+        return cleaned;
       }
     }
     
@@ -80,16 +71,16 @@ class SMSService {
       // Format béninois : 01XXXXXXXX (10 chiffres) ou 0XXXXXXXX (9 chiffres)
       if (cleaned.length === 10 && cleaned.startsWith('01')) {
         // Enlever les 2 premiers chiffres (01) pour obtenir 8 chiffres
-        return formatWithSpaces(cleaned.substring(2));
+        return '229' + cleaned.substring(2);
       } else if (cleaned.length === 9) {
         // Enlever le 0 initial pour obtenir 8 chiffres
-        return formatWithSpaces(cleaned.substring(1));
+        return '229' + cleaned.substring(1);
       }
     }
     
     // Cas 3: Numéro sans 0 (8 chiffres uniquement)
     if (cleaned.length === 8) {
-      return formatWithSpaces(cleaned);
+      return '229' + cleaned;
     }
     
     // Si aucun format reconnu, logger l'erreur et retourner null
