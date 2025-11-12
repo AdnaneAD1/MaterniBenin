@@ -27,7 +27,7 @@ class CronService {
       // 1. Récupérer UNIQUEMENT les grossesses en cours
       const grossessesQuery = query(
         collection(db, 'grossesses'),
-        where('statut', '==', 'en_cours')  // ✅ Filtrer par statut
+        where('statut', '==', 'En cours')  // ✅ Filtrer par statut
       );
       
       const grossessesSnapshot = await getDocs(grossessesQuery);
