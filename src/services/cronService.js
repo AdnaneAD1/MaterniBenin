@@ -201,6 +201,126 @@ class CronService {
   }
 
   /**
+   * Récupérer les RDV de planification familiale à venir (uniquement futures et présentes)
+   */
+  async getUpcomingPlanificationRdv() {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      console.log('🔍 Récupération des RDV planification familiale...');
+      
+      // Récupérer toutes les planifications avec RDV
+      const planificationsQuery = query(
+        collection(db, 'planifications')
+      );
+      
+      const planificationsSnapshot = await getDocs(planificationsQuery);
+      console.log(`📋 ${planificationsSnapshot.size} planifications trouvées`);
+      
+      const rdvList = [];
+
+      for (const planifDoc of planificationsSnapshot.docs) {
+        const planifData = planifDoc.data();
+        const rdvProchain = planifData.rdvProchain;
+
+        // Vérifier que le RDV existe et n'est pas vide
+        if (!rdvProchain || rdvProchain === '') continue;
+
+        try {
+          // Convertir la date RDV
+          let rdv;
+          if (rdvProchain.toDate) {
+            rdv = rdvProchain.toDate();
+          } else if (typeof rdvProchain === 'string') {
+            rdv = new Date(rdvProchain);
+          } else {
+            console.log('⚠️ Format RDV non supporté pour planification', planifDoc.id);
+            continue;
+          }
+
+          // Vérifier que la date est valide
+          if (isNaN(rdv.getTime())) {
+            console.log('⚠️ Date RDV invalide pour planification', planifDoc.id);
+            continue;
+          }
+
+          // Calculer les jours jusqu'au RDV
+          const diffTime = rdv.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          // ⭐ UNIQUEMENT les dates futures et présentes (diffDays >= 0)
+          if (diffDays < 0) {
+            console.log(`⏭️ RDV passé (${diffDays} jours), skip`);
+            continue;
+          }
+
+          // Récupérer les informations de la patiente
+          const dossierId = planifData.dossierId;
+          if (!dossierId) continue;
+
+          const dossierDoc = await getDocs(query(
+            collection(db, 'dossiers'),
+            where('__name__', '==', dossierId)
+          ));
+          
+          if (dossierDoc.empty) continue;
+          
+          const dossierData = dossierDoc.docs[0].data();
+          const patientId = dossierData.patientId;
+
+          const patientDoc = await getDocs(query(
+            collection(db, 'patientes'),
+            where('__name__', '==', patientId)
+          ));
+          
+          if (patientDoc.empty) continue;
+          
+          const patientData = patientDoc.docs[0].data();
+          const personneId = patientData.personneId;
+
+          const personneDoc = await getDocs(query(
+            collection(db, 'personnes'),
+            where('__name__', '==', personneId)
+          ));
+          
+          if (personneDoc.empty) continue;
+          
+          const personne = personneDoc.docs[0].data();
+
+          // Ajouter à la liste
+          rdvList.push({
+            id: planifDoc.id,
+            type: 'planification',
+            methode: planifData.methode || 'Planification familiale',
+            rdv: rdv,
+            rdvOriginal: rdvProchain,
+            diffDays,
+            userId: planifData.userId,
+            patient: {
+              patientId,
+              nom: personne.nom || '',
+              prenom: personne.prenom || '',
+              telephone: personne.telephone || '',
+              email: personne.email || ''
+            }
+          });
+
+          console.log(`✅ RDV ajouté: ${personne.prenom} ${personne.nom} - RDV dans ${diffDays} jours (${planifData.methode})`);
+        } catch (error) {
+          console.error(`❌ Erreur traitement planification ${planifDoc.id}:`, error);
+        }
+      }
+
+      console.log(`📊 Total: ${rdvList.length} RDV planification à venir`);
+      return rdvList;
+    } catch (error) {
+      console.error('❌ Erreur récupération RDV planification:', error);
+      return [];
+    }
+  }
+
+  /**
    * Envoyer les rappels pour une CPN
    */
   async sendReminders(cpnData, daysUntil) {
@@ -236,17 +356,23 @@ class CronService {
   }
 
   /**
-   * Traiter les rappels de CPN
+   * Traiter les rappels de CPN et Planification Familiale
    */
   async processCpnReminders() {
-    console.log('🔄 Traitement des rappels CPN...');
+    console.log('🔄 Traitement des rappels CPN et Planification Familiale...');
     
     try {
+      // 1. Récupérer les CPN
       const cpnList = await this.getUpcomingAndLateCpns();
       console.log(`📋 ${cpnList.length} CPN trouvées`);
 
+      // 2. Récupérer les RDV de planification familiale
+      const planifList = await this.getUpcomingPlanificationRdv();
+      console.log(`📋 ${planifList.length} RDV planification trouvés`);
+
       let sentCount = 0;
 
+      // 3. Traiter les rappels CPN
       for (const cpn of cpnList) {
         const { diffDays } = cpn;
 
@@ -257,7 +383,18 @@ class CronService {
         }
       }
 
-      console.log(`✅ ${sentCount} rappels envoyés`);
+      // 4. Traiter les rappels Planification Familiale (uniquement J-3, J-1, J-0)
+      for (const planif of planifList) {
+        const { diffDays } = planif;
+
+        // ⭐ Uniquement J-3, J-1, J-0 (pas de retard car on filtre déjà les dates passées)
+        if (diffDays === 3 || diffDays === 1 || diffDays === 0) {
+          await this.sendReminders(planif, diffDays);
+          sentCount++;
+        }
+      }
+
+      console.log(`✅ ${sentCount} rappels envoyés (CPN + Planification)`);
     } catch (error) {
       console.error('❌ Erreur traitement rappels:', error);
     }

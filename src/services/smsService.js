@@ -122,7 +122,7 @@ class SMSService {
       }
 
       // ⚠️ MODE TEST : Remplacer le numéro par défaut pour contourner limitation compte essai
-      const testNumber = '+2290160807271';
+      const testNumber = '+18777804236';
       console.log(`📱 Mode test: Envoi vers ${testNumber} au lieu de ${formattedPhone}`);
 
       const result = await this.client.messages.create({
@@ -149,13 +149,13 @@ class SMSService {
   }
 
   /**
-   * Envoyer un rappel de CPN par SMS
-   * @param {Object} cpnData - Données de la CPN
-   * @param {number} daysUntil - Jours avant la CPN
+   * Envoyer un rappel de CPN ou Planification Familiale par SMS
+   * @param {Object} cpnData - Données de la CPN ou Planification
+   * @param {number} daysUntil - Jours avant le RDV
    * @returns {Promise<Object>}
    */
   async sendCpnReminder(cpnData, daysUntil) {
-    const { patient, rdv, cpnLabel } = cpnData;
+    const { patient, rdv, cpnLabel, type, methode } = cpnData;
     
     if (!patient.telephone) {
       return {
@@ -176,17 +176,22 @@ class SMSService {
       minute: '2-digit'
     });
 
+    // Déterminer le type de consultation
+    const consultationType = type === 'planification' 
+      ? (methode || 'rendez-vous de planification familiale')
+      : (cpnLabel || 'consultation prénatale');
+
     let message = '';
     
     if (daysUntil === 0) {
-      message = `Bonjour Mme ${patient.nom},\n\nRappel: Votre ${cpnLabel || 'consultation prénatale'} est aujourd'hui à ${timeStr}.\n\nCentre de santé MaterniBénin`;
+      message = `Bonjour Mme ${patient.nom},\n\nRappel: Votre ${consultationType} est aujourd'hui à ${timeStr}.\n\nCentre de santé MaterniBénin`;
     } else if (daysUntil === 1) {
-      message = `Bonjour Mme ${patient.nom},\n\nRappel: Votre ${cpnLabel || 'consultation prénatale'} est demain ${dateStr} à ${timeStr}.\n\nCentre de santé MaterniBénin`;
+      message = `Bonjour Mme ${patient.nom},\n\nRappel: Votre ${consultationType} est demain ${dateStr} à ${timeStr}.\n\nCentre de santé MaterniBénin`;
     } else if (daysUntil === 3) {
-      message = `Bonjour Mme ${patient.nom},\n\nVotre ${cpnLabel || 'consultation prénatale'} est prévue le ${dateStr} à ${timeStr}.\n\nCentre de santé MaterniBénin`;
+      message = `Bonjour Mme ${patient.nom},\n\nVotre ${consultationType} est prévu(e) le ${dateStr} à ${timeStr}.\n\nCentre de santé MaterniBénin`;
     } else if (daysUntil < 0) {
       const daysLate = Math.abs(daysUntil);
-      message = `Bonjour Mme ${patient.nom},\n\nVotre ${cpnLabel || 'consultation prénatale'} était prévue le ${dateStr}. Merci de nous contacter pour un nouveau rendez-vous.\n\nCentre de santé MaterniBénin`;
+      message = `Bonjour Mme ${patient.nom},\n\nVotre ${consultationType} était prévu(e) le ${dateStr}. Merci de nous contacter pour un nouveau rendez-vous.\n\nCentre de santé MaterniBénin`;
     }
 
     return this.sendSMS(patient.telephone, message);

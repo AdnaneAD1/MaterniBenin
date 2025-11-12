@@ -248,7 +248,7 @@ export default function AddPlanificationModal({ open, onClose, onAdd, onUpdate, 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                   pattern="[0-9]{8,15}"
-                  placeholder="Ex: 97123456"
+                  placeholder="Ex: 0197123456"
                 />
               </div>
               <div>

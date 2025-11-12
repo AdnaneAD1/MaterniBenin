@@ -14,7 +14,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fullText = "Bienvenue dans l'espace professionnel des sage-femmes";
+  const fullText = "Bienvenue dans l'espace professionnel des sages-femmes";
 
   const { login, loading, error, currentUser } = useAuth();
   const router = useRouter();
