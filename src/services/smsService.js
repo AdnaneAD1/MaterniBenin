@@ -121,10 +121,14 @@ class SMSService {
         };
       }
 
+      // ⚠️ MODE TEST : Remplacer le numéro par défaut pour contourner limitation compte essai
+      const testNumber = '+18777804236';
+      console.log(`📱 Mode test: Envoi vers ${testNumber} au lieu de ${formattedPhone}`);
+
       const result = await this.client.messages.create({
         body: message,
         from: this.phoneNumber,
-        to: formattedPhone
+        to: testNumber  // Utiliser le numéro de test
       });
 
       console.log('✅ SMS envoyé:', result.sid);
