@@ -33,7 +33,7 @@ export default function UtilisateursPage() {
     const [form, setForm] = useState({ nom: "", prenom: "", telephone: "", email: "", role: "sage-femme" });
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { createUser, loading } = useAuth();
+    const { createUser, loading, currentUser } = useAuth();
     const { getUsersWithDetails, loading: usersLoading, deleteUser } = useUser();
     const [users, setUsers] = useState([]);
     const [refreshUsers, setRefreshUsers] = useState(0);
@@ -45,21 +45,31 @@ export default function UtilisateursPage() {
     useEffect(() => {
         const loadUsers = async () => {
             try {
+                // Attendre que currentUser soit chargé
+                if (!currentUser) {
+                    return;
+                }
+
                 const result = await getUsersWithDetails();
                 if (result.success) {
-                    // Transformer les données pour correspondre au format attendu par le tableau
-                    const transformedUsers = result.users.map(user => ({
-                        id: user.id,
-                        nom: user.lastName || '',
-                        prenom: user.firstName || '',
-                        telephone: user.phoneNumber || '',
-                        email: user.email || '',
-                        role: user.role === 'sage-femme' ? 'Sage-femme' : 'Responsable',
-                        status: user.statut || 'Actif',
-                        dateCreation: user.createdAt ? user.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-                        avatar: `${(user.firstName || 'U').charAt(0)}${(user.lastName || 'U').charAt(0)}`,
-                        color: getRandomColor()
-                    }));
+                    // Filtrer : uniquement les sages-femmes du même centre
+                    const transformedUsers = result.users
+                        .filter(user => 
+                            user.role === 'sage-femme' && 
+                            user.centreId === currentUser.centreId
+                        )
+                        .map(user => ({
+                            id: user.id,
+                            nom: user.lastName || '',
+                            prenom: user.firstName || '',
+                            telephone: user.phoneNumber || '',
+                            email: user.email || '',
+                            role: 'Sage-femme',
+                            status: user.statut || 'Actif',
+                            dateCreation: user.createdAt ? user.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                            avatar: `${(user.firstName || 'U').charAt(0)}${(user.lastName || 'U').charAt(0)}`,
+                            color: getRandomColor()
+                        }));
                     setUsers(transformedUsers);
                 }
             } catch (error) {
@@ -68,7 +78,7 @@ export default function UtilisateursPage() {
         };
 
         loadUsers();
-    }, [getUsersWithDetails, refreshUsers]);
+    }, [currentUser?.uid, refreshUsers]);
 
     // Fonction pour générer une couleur aléatoire pour l'avatar
     const getRandomColor = () => {
@@ -160,7 +170,9 @@ export default function UtilisateursPage() {
                 email: form.email,
                 firstName: form.prenom,
                 lastName: form.nom,
-                phoneNumber: form.telephone
+                phoneNumber: form.telephone,
+                centreId: currentUser?.centreId,
+                role: 'sage-femme'
             });
             
             if (result && result.uid) {
@@ -562,20 +574,6 @@ export default function UtilisateursPage() {
                                     required
                                 />
                             </div>
-                            
-                            {/* <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
-                                <select
-                                    name="role"
-                                    value={form.role}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    required
-                                >
-                                    <option value="sage-femme">Sage-femme</option>
-                                    <option value="responsable">Responsable</option>
-                                </select>
-                            </div> */}
                             
                             {error && (
                                 <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">

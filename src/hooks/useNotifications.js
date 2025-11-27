@@ -15,7 +15,7 @@ export function useNotifications() {
    * Charger les notifications
    */
   const loadNotifications = useCallback(async (unreadOnly = false) => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid || !currentUser?.centreId) return;
 
     try {
       setLoading(true);
@@ -23,6 +23,7 @@ export function useNotifications() {
 
       const params = new URLSearchParams({
         userId: currentUser.uid,
+        centreId: currentUser.centreId,
         unreadOnly: unreadOnly.toString(),
         limit: '50'
       });
@@ -50,11 +51,12 @@ export function useNotifications() {
    * Charger le nombre de notifications non lues
    */
   const loadUnreadCount = useCallback(async () => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid || !currentUser?.centreId) return;
 
     try {
       const params = new URLSearchParams({
         userId: currentUser.uid,
+        centreId: currentUser.centreId,
         unreadOnly: 'true'
       });
 

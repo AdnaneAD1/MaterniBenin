@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { usePlanification } from '@/hooks/planification';
 import AddPlanificationModal from '@/components/AddPlanificationModal';
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 
 export default function PlanificationPage() {
+    const { currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Toutes');
     const [currentPage, setCurrentPage] = useState(1);
@@ -91,6 +93,11 @@ export default function PlanificationPage() {
 
     const loadData = async () => {
         try {
+            // Attendre que currentUser soit chargé
+            if (!currentUser) {
+                return;
+            }
+
             setIsLoading(true);
             const [resList, resStats] = await Promise.all([
                 getPlanificationsWithDetails(),
@@ -110,7 +117,7 @@ export default function PlanificationPage() {
     useEffect(() => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [currentUser?.uid]);
 
     const getStatusBadge = (status) => {
         const statusConfig = {

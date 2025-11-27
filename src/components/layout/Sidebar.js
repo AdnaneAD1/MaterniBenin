@@ -12,6 +12,7 @@ import {
   BarChart3, 
   UserCheck, 
   Settings, 
+  User,
   LogOut,
   X,
   Phone,
@@ -51,13 +52,19 @@ const Sidebar = ({
     { name: 'Accouchements', href: '/dashboard/accouchements', icon: Baby },
     { name: 'Planification', href: '/dashboard/planification', icon: Calendar },
     { name: 'Rapports', href: '/dashboard/rapports', icon: BarChart3 },
-    { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings },
+    { name: 'Profil', href: '/dashboard/parametres', icon: User },
   ];
 
-  // Ajouter le menu Utilisateurs seulement pour les responsables
-  const menuItems = isResponsable 
-    ? [...baseMenuItems.slice(0, 6), { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserCheck }, ...baseMenuItems.slice(6)]
-    : baseMenuItems;
+  // Ajouter les menus supplémentaires pour les responsables
+  let menuItems = baseMenuItems;
+  if (isResponsable) {
+    menuItems = [
+      ...baseMenuItems.slice(0, 6),
+      { name: 'Utilisateurs', href: '/dashboard/utilisateurs', icon: UserCheck },
+      { name: 'Paramètres Centre', href: '/dashboard/parametres-centre', icon: Settings },
+      ...baseMenuItems.slice(6),
+    ];
+  }
 
   return (
     <>

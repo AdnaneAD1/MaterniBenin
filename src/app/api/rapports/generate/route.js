@@ -15,10 +15,11 @@ const getMonthIndex = (monthName) => {
 
 const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1);
 
-async function generateCpnReport(startDate, endDate) {
+async function generateCpnReport(startDate, endDate, centreId) {
   const cpnQuery = query(
     collection(db, 'consultations'),
     where('type', '==', 'CPN'),
+    where('centreId', '==', centreId),
     where('dateConsultation', '>=', Timestamp.fromDate(startDate)),
     where('dateConsultation', '<=', Timestamp.fromDate(endDate))
   );
@@ -60,7 +61,9 @@ async function generateCpnReport(startDate, endDate) {
   };
 }
 
-async function generateAccouchementReport(startDate, endDate) {
+async function generateAccouchementReport(startDate, endDate, centreId) {
+  // Accouchements ne sont pas directement liés à centreId, donc on récupère via grossesses
+  // Pour l'instant, récupérer tous les accouchements du mois (à améliorer avec index)
   const accouchementQuery = query(
     collection(db, 'accouchements'),
     where('createdAt', '>=', Timestamp.fromDate(startDate)),
@@ -117,13 +120,28 @@ async function generateAccouchementReport(startDate, endDate) {
   };
 }
 
-async function generatePlanificationReport(startDate, endDate) {
+async function generatePlanificationReport(startDate, endDate, centreId) {
   const planificationQuery = query(
-    collection(db, 'planifications'),
-    where('createdAt', '>=', Timestamp.fromDate(startDate)),
-    where('createdAt', '<=', Timestamp.fromDate(endDate))
+    collection(db, 'consultations'),
+    where('type', '==', 'planification'),
+    where('centreId', '==', centreId),
+    where('dateConsultation', '>=', Timestamp.fromDate(startDate)),
+    where('dateConsultation', '<=', Timestamp.fromDate(endDate))
   );
-  const planificationSnapshot = await getDocs(planificationQuery);
+  const consultationsSnapshot = await getDocs(planificationQuery);
+  
+  // Récupérer les planifications liées
+  const planificationSnapshot = await Promise.all(
+    consultationsSnapshot.docs.map(async (conDoc) => {
+      const planQuery = query(
+        collection(db, 'planifications'),
+        where('consultationId', '==', conDoc.id)
+      );
+      return getDocs(planQuery);
+    })
+  ).then(results => ({
+    docs: results.flatMap(r => r.docs)
+  }));
 
   let totalPlanifications = planificationSnapshot.size;
   let methodesCount = {
@@ -178,8 +196,8 @@ async function generatePlanificationReport(startDate, endDate) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { type, mois, annee } = body || {};
-    if (!type || !mois || !annee) {
+    const { type, mois, annee, centreId } = body || {};
+    if (!type || !mois || !annee || !centreId) {
       return NextResponse.json({ success: false, error: 'Champs manquants' }, { status: 400 });
     }
 
@@ -194,13 +212,13 @@ export async function POST(request) {
     let reportData = {};
     switch (type) {
       case 'CPN':
-        reportData = await generateCpnReport(startDate, endDate);
+        reportData = await generateCpnReport(startDate, endDate, centreId);
         break;
       case 'Accouchement':
-        reportData = await generateAccouchementReport(startDate, endDate);
+        reportData = await generateAccouchementReport(startDate, endDate, centreId);
         break;
       case 'Planification':
-        reportData = await generatePlanificationReport(startDate, endDate);
+        reportData = await generatePlanificationReport(startDate, endDate, centreId);
         break;
       default:
         return NextResponse.json({ success: false, error: 'Type de rapport non supporté' }, { status: 400 });
@@ -219,6 +237,7 @@ export async function POST(request) {
       type,
       mois,
       annee,
+      centreId,
       data: reportData,
       pdfUrl: cloudinaryResult.url,
       cloudinaryPublicId: cloudinaryResult.public_id,

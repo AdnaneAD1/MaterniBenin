@@ -27,9 +27,21 @@ export function usePlanification() {
     const { currentUser } = useAuth();
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "planifications"), (snapshot) => {
-            const planifications = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            setPlanifications(planifications);
+        if (!currentUser?.centreId) {
+            setPlanifications([]);
+            setLoading(false);
+            return;
+        }
+
+        const q = query(
+            collection(db, "consultations"),
+            where("type", "==", "planification"),
+            where("centreId", "==", currentUser.centreId)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const consultations = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            setPlanifications(consultations);
             setLoading(false);
         }, (error) => {
             setError(error);
@@ -37,7 +49,7 @@ export function usePlanification() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [currentUser?.centreId]);
 
     const addPlanification = async (planification) => {
         try {
@@ -47,6 +59,7 @@ export function usePlanification() {
                 age: planification.age,
                 telephone: planification.telephone,
                 adresse: planification.adresse,
+                centreId: currentUser?.centreId || null,
                 createdAt: Timestamp.now(),
             }
             const conRef = await addDoc(collection(db, "consultations"), {
@@ -55,6 +68,7 @@ export function usePlanification() {
                 diagnostique: planification.diagnostique,
                 rdv: planification.rdv,
                 userId: currentUser.uid,
+                centreId: currentUser?.centreId || null,
                 createdAt: Timestamp.now(),
             });
             const personneRef = await addDoc(collection(db, "personnes"), personneData);
@@ -194,9 +208,19 @@ export function usePlanification() {
         try {
             setLoading(true);
             
-            // Get all planifications
-            const planificationsSnapshot = await getDocs(collection(db, "planifications"));
-            const totalPlanifications = planificationsSnapshot.size;
+            if (!currentUser?.centreId) {
+                setLoading(false);
+                return { success: false, error: new Error('Centre non défini') };
+            }
+            
+            // Get all planifications for this centre (via consultations)
+            const consultationsQuery = query(
+                collection(db, "consultations"),
+                where("type", "==", "planification"),
+                where("centreId", "==", currentUser.centreId)
+            );
+            const consultationsSnapshot = await getDocs(consultationsQuery);
+            const totalPlanifications = consultationsSnapshot.size;
             
             // Get planifications this month
             const currentMonth = new Date();
@@ -204,8 +228,10 @@ export function usePlanification() {
             currentMonth.setHours(0, 0, 0, 0);
             
             const planificationsThisMonthQuery = query(
-                collection(db, "planifications"),
-                where("createdAt", ">=", Timestamp.fromDate(currentMonth))
+                collection(db, "consultations"),
+                where("type", "==", "planification"),
+                where("centreId", "==", currentUser.centreId),
+                where("dateConsultation", ">=", Timestamp.fromDate(currentMonth))
             );
             const planificationsThisMonthSnapshot = await getDocs(planificationsThisMonthQuery);
             const planificationsThisMonth = planificationsThisMonthSnapshot.size;
@@ -222,7 +248,13 @@ export function usePlanification() {
             let feminin = 0;
             let masculin = 0;
             
-            for (const planificationDoc of planificationsSnapshot.docs) {
+            // Get all planifications for counting methods
+            const allPlanificationsQuery = query(
+                collection(db, "planifications")
+            );
+            const allPlanificationsSnapshot = await getDocs(allPlanificationsQuery);
+            
+            for (const planificationDoc of allPlanificationsSnapshot.docs) {
                 const planificationData = planificationDoc.data();
                 const methode = planificationData.methodeChoisis?.toLowerCase() || '';
                 const sexe = planificationData.sexe?.toLowerCase() || '';
@@ -250,14 +282,8 @@ export function usePlanification() {
                 }
             }
             
-            // Get consultations this month for planification
-            const consultationsThisMonthQuery = query(
-                collection(db, "consultations"),
-                where("type", "==", "planification"),
-                where("dateConsultation", ">=", Timestamp.fromDate(currentMonth))
-            );
-            const consultationsThisMonthSnapshot = await getDocs(consultationsThisMonthQuery);
-            const consultationsThisMonth = consultationsThisMonthSnapshot.size;
+            // Get consultations this month for planification (already filtered by centreId above)
+            const consultationsThisMonth = planificationsThisMonthSnapshot.size;
             
             const stats = {
                 totalPlanifications,

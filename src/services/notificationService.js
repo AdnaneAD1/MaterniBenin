@@ -30,6 +30,11 @@ class NotificationService {
         createdAt: Timestamp.now(),
       };
 
+      // Ajouter centreId si présent
+      if (notificationData.centreId) {
+        notification.centreId = notificationData.centreId;
+      }
+
       const docRef = await addDoc(collection(db, 'notifications'), notification);
       
       return {
@@ -53,7 +58,7 @@ class NotificationService {
    * @returns {Promise<Object>}
    */
   async createCpnReminderNotification(cpnData, daysUntil) {
-    const { patient, rdv, cpnLabel, userId } = cpnData;
+    const { patient, rdv, cpnLabel, userId, centreId } = cpnData;
     
     let message = '';
     let priority = 'normal';
@@ -78,6 +83,7 @@ class NotificationService {
       message,
       priority,
       userId, // Sage-femme responsable
+      centreId, // Centre de la notification
       patientId: patient.patientId,
       patientName: `${patient.prenom} ${patient.nom}`,
       rdv: rdv,
@@ -95,7 +101,7 @@ class NotificationService {
    * @returns {Promise<Object>}
    */
   async createLateCpnNotification(cpnData) {
-    const { patient, rdv, cpnLabel, userId } = cpnData;
+    const { patient, rdv, cpnLabel, userId, centreId } = cpnData;
     // rdv est déjà un objet Date
     const rdvDate = rdv instanceof Date ? rdv : (rdv.toDate ? rdv.toDate() : new Date(rdv));
     const daysLate = Math.abs(Math.floor((new Date() - rdvDate) / (1000 * 60 * 60 * 24)));
@@ -106,6 +112,7 @@ class NotificationService {
       message: `CPN en retard de ${daysLate} jour(s) : ${patient.prenom} ${patient.nom} - ${cpnLabel || 'Consultation'}`,
       priority: 'urgent',
       userId,
+      centreId, // Centre de la notification
       patientId: patient.patientId,
       patientName: `${patient.prenom} ${patient.nom}`,
       rdv: rdv,
@@ -118,16 +125,18 @@ class NotificationService {
   }
 
   /**
-   * Récupérer les notifications d'un utilisateur
+   * Récupérer les notifications d'un utilisateur pour son centre
    * @param {string} userId - ID de l'utilisateur
+   * @param {string} centreId - ID du centre
    * @param {number} limitCount - Nombre max de notifications
    * @returns {Promise<Object>}
    */
-  async getUserNotifications(userId, limitCount = 50) {
+  async getUserNotifications(userId, centreId, limitCount = 50) {
     try {
       const q = query(
         collection(db, 'notifications'),
         where('userId', '==', userId),
+        where('centreId', '==', centreId),
         orderBy('createdAt', 'desc'),
         limit(limitCount)
       );
@@ -153,15 +162,17 @@ class NotificationService {
   }
 
   /**
-   * Récupérer les notifications non lues
+   * Récupérer les notifications non lues pour son centre
    * @param {string} userId - ID de l'utilisateur
+   * @param {string} centreId - ID du centre
    * @returns {Promise<Object>}
    */
-  async getUnreadNotifications(userId) {
+  async getUnreadNotifications(userId, centreId) {
     try {
       const q = query(
         collection(db, 'notifications'),
         where('userId', '==', userId),
+        where('centreId', '==', centreId),
         where('read', '==', false),
         orderBy('createdAt', 'desc')
       );

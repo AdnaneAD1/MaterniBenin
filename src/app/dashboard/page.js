@@ -41,6 +41,12 @@ export default function Dashboard() {
     let mounted = true;
     (async () => {
       try {
+        // Attendre que currentUser soit chargé
+        if (!currentUser?.centreId) {
+          if (mounted) setLoading(false);
+          return;
+        }
+
         setLoading(true);
         const [p, cpn, acc, upc] = await Promise.all([
           getPatientStats(),
@@ -60,7 +66,7 @@ export default function Dashboard() {
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [currentUser?.centreId]);
 
   const topPatients = Math.max(
     Number.isFinite(patientStats?.totalPatients) ? patientStats.totalPatients : 0,

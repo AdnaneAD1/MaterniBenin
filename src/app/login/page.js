@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Eye, EyeOff, Baby } from 'lucide-react';
+import { Plus, Eye, EyeOff, Baby, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/hooks/auth';
@@ -35,8 +35,17 @@ export default function Login() {
 
   // Rediriger si l'utilisateur est déjà connecté
   useEffect(() => {
-    if (currentUser) {
-      router.push('/dashboard');
+    if (currentUser && currentUser.uid) {
+      // Redirection basée sur le rôle avec délai pour s'assurer que les données sont chargées
+      const timer = setTimeout(() => {
+        if (currentUser.role === 'admin') {
+          router.push('/dashboard/admin');
+        } else {
+          router.push('/dashboard');
+        }
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [currentUser, router]);
 
@@ -49,7 +58,7 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       await login(email, password);
-      router.push('/dashboard');
+      // La redirection se fera automatiquement via le useEffect qui surveille currentUser
     } catch (err) {
       console.error('Erreur de connexion:', err);
     } finally {

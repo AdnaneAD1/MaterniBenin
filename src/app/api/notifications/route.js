@@ -9,21 +9,22 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const centreId = searchParams.get('centreId');
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    if (!userId) {
+    if (!userId || !centreId) {
       return NextResponse.json(
-        { error: 'userId requis' },
+        { error: 'userId et centreId requis' },
         { status: 400 }
       );
     }
 
     let result;
     if (unreadOnly) {
-      result = await notificationService.getUnreadNotifications(userId);
+      result = await notificationService.getUnreadNotifications(userId, centreId);
     } else {
-      result = await notificationService.getUserNotifications(userId, limit);
+      result = await notificationService.getUserNotifications(userId, centreId, limit);
     }
 
     if (!result.success) {

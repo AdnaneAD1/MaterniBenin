@@ -17,13 +17,17 @@ export function useRapport() {
             setLoading(true);
             setError(null);
 
+            if (!currentUser?.centreId) {
+                throw new Error('Centre non défini');
+            }
+
             // Générer un ID personnalisé pour le rapport
             const rapportId = await generateRapportId();
 
             const res = await fetch('/api/rapports/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, mois, annee, rapportId })
+                body: JSON.stringify({ type, mois, annee, rapportId, centreId: currentUser.centreId })
             });
             const data = await res.json();
             if (!res.ok || !data.success) {
@@ -43,14 +47,19 @@ export function useRapport() {
         try {
             setLoading(true);
             
+            if (!currentUser?.centreId) {
+                throw new Error('Centre non défini');
+            }
+            
             const now = new Date();
             const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const mois = getMonthName(lastMonth.getMonth());
             const annee = lastMonth.getFullYear();
 
-            // Vérifier si les rapports du mois précédent existent déjà
+            // Vérifier si les rapports du mois précédent existent déjà pour ce centre
             const existingReportsQuery = query(
                 collection(db, "rapports"),
+                where("centreId", "==", currentUser.centreId),
                 where("mois", "==", mois),
                 where("annee", "==", annee)
             );
@@ -81,8 +90,14 @@ export function useRapport() {
         try {
             setLoading(true);
             
+            if (!currentUser?.centreId) {
+                setLoading(false);
+                return { success: false, error: new Error('Centre non défini') };
+            }
+            
             const rapportsQuery = query(
                 collection(db, "rapports"),
+                where("centreId", "==", currentUser.centreId),
                 orderBy("createdAt", "desc")
             );
             const rapportsSnapshot = await getDocs(rapportsQuery);
@@ -134,7 +149,7 @@ export function useRapport() {
         const interval = setInterval(checkAndGenerateReports, 60 * 60 * 1000);
         
         return () => clearInterval(interval);
-    }, [generateEndOfMonthReports]);
+    }, [generateEndOfMonthReports, currentUser]);
 
     return {
         rapports,

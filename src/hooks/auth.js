@@ -27,11 +27,13 @@ export function useAuth() {
                         const userData = userDoc.data();
                         const userWithRole = {
                             ...user,
+                            email: user.email,
                             role: userData.role,
                             firstName: userData.firstName,
                             lastName: userData.lastName,
                             displayName: userData.displayName,
-                            phoneNumber: userData.phoneNumber
+                            phoneNumber: userData.phoneNumber,
+                            centreId: userData.centreId
                         };
                         setUser(userWithRole);
                         setCurrentUser(userWithRole);
@@ -71,7 +73,8 @@ export function useAuth() {
                 firstName: userData.firstName,
                 lastName: userData.lastName,
                 displayName: userData.displayName,
-                phoneNumber: userData.phoneNumber
+                phoneNumber: userData.phoneNumber,
+                centreId: userData.centreId
               };
               setUser(userWithRole);
               setCurrentUser(userWithRole);
@@ -168,20 +171,20 @@ export function useAuth() {
     };
 
     // Créer un utilisateur via l'API Admin (mot de passe généré automatiquement côté serveur)
-    const createUser = async ({ email, firstName, lastName, phoneNumber} = {}) => {
+    const createUser = async ({ email, firstName, lastName, phoneNumber, centreId, role = 'sage-femme' } = {}) => {
         setLoading(true);
         setError(null);
         try {
             if (!email) throw new Error('L\'adresse email est requise');
             if (!firstName) throw new Error('Le prénom est requis');
             if (!lastName) throw new Error('Le nom est requis');
+            if (!centreId) throw new Error('Le centre est requis');
             
             const displayName = `${firstName} ${lastName}`;
-            const role = "sage-femme";
             const res = await fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, displayName })
+                body: JSON.stringify({ email, displayName, centreId, role })
             });
 
             const data = await res.json();
@@ -201,6 +204,7 @@ export function useAuth() {
                     displayName: savedName || displayName || "",
                     phoneNumber: phoneNumber || "",
                     role: role || "sage-femme",
+                    centreId: centreId || null,
                     createdAt: serverTimestamp(),
                     createdBy: (typeof window !== 'undefined' && auth?.currentUser?.uid) ? auth.currentUser.uid : null,
                 };

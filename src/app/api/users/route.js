@@ -45,7 +45,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { email, displayName } = body || {};
+    const { email, displayName, centreId, role = 'sage-femme' } = body || {};
 
     if (!email) {
       return NextResponse.json({ error: 'email requis' }, { status: 400 });
@@ -103,6 +103,8 @@ export async function POST(request) {
         uid: userRecord.uid,
         email: userRecord.email,
         displayName: userRecord.displayName || displayName || null,
+        centreId: centreId || null,
+        role: role,
         generatedPassword: password, // Montrez-le uniquement côté admin et stockez-le de manière sécurisée
         emailSent,
       },

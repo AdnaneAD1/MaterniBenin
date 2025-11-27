@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { usePatiente } from '@/hooks/patientes';
 
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react';
 
 export default function AccouchementPage() {
+    const { currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +45,11 @@ export default function AccouchementPage() {
     useEffect(() => {
         const loadData = async () => {
             try {
+                // Attendre que currentUser soit chargé
+                if (!currentUser) {
+                    return;
+                }
+
                 setIsLoading(true);
                 const [accResult, statsResult] = await Promise.all([
                     getAccouchements(),
@@ -92,9 +99,8 @@ export default function AccouchementPage() {
             }
         };
         loadData();
-        // Intentionally not adding hook functions to deps to avoid re-renders loop
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [currentUser?.uid]);
 
     // Generate random color for avatar
     const getRandomColor = () => {

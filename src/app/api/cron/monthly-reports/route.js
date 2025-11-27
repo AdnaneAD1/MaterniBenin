@@ -12,15 +12,15 @@ function getMonthName(monthIndex) {
     return months[monthIndex];
 }
 
-// Fonction pour générer un rapport mensuel
-async function generateMonthlyReport(type, mois, annee) {
+// Fonction pour générer un rapport mensuel pour un centre
+async function generateMonthlyReport(type, mois, annee, centreId) {
     try {
         const rapportId = await generateRapportId();
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/rapports/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, mois, annee, rapportId })
+            body: JSON.stringify({ type, mois, annee, rapportId, centreId })
         });
 
         const data = await response.json();
@@ -58,39 +58,56 @@ export async function POST(request) {
 
         console.log(`📅 Génération des rapports pour ${mois} ${annee}`);
 
-        // Vérifier si les rapports du mois précédent existent déjà
-        const existingReportsQuery = query(
-            collection(db, "rapports"),
-            where("mois", "==", mois),
-            where("annee", "==", annee)
-        );
-        const existingReports = await getDocs(existingReportsQuery);
-        
-        const existingTypes = existingReports.docs.map(doc => doc.data().type);
-        const typesToGenerate = ["CPN", "Accouchement", "Planification"]
-            .filter(type => !existingTypes.includes(type));
+        // Récupérer tous les centres
+        const centresSnapshot = await getDocs(collection(db, "centres"));
+        const centres = centresSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
 
-        if (typesToGenerate.length === 0) {
-            console.log('ℹ️ Tous les rapports du mois précédent existent déjà');
-            return NextResponse.json({
-                success: true,
-                message: 'Tous les rapports du mois précédent existent déjà',
-                reports: []
-            });
-        }
-
-        console.log(`📊 Types de rapports à générer: ${typesToGenerate.join(', ')}`);
+        console.log(`🏥 ${centres.length} centre(s) trouvé(s)`);
 
         const results = [];
-        for (const type of typesToGenerate) {
-            console.log(`🔄 Génération du rapport ${type}...`);
-            const result = await generateMonthlyReport(type, mois, annee);
-            results.push({ type, ...result });
+        
+        // Pour chaque centre, générer les rapports
+        for (const centre of centres) {
+            console.log(`\n📍 Génération des rapports pour le centre: ${centre.nom || centre.id}`);
             
-            if (result.success) {
-                console.log(`✅ Rapport ${type} généré avec succès`);
-            } else {
-                console.error(`❌ Erreur génération rapport ${type}:`, result.error);
+            // Vérifier si les rapports du mois précédent existent déjà pour ce centre
+            const existingReportsQuery = query(
+                collection(db, "rapports"),
+                where("centreId", "==", centre.id),
+                where("mois", "==", mois),
+                where("annee", "==", annee)
+            );
+            const existingReports = await getDocs(existingReportsQuery);
+            
+            const existingTypes = existingReports.docs.map(doc => doc.data().type);
+            const typesToGenerate = ["CPN", "Accouchement", "Planification"]
+                .filter(type => !existingTypes.includes(type));
+
+            if (typesToGenerate.length === 0) {
+                console.log(`ℹ️ Tous les rapports existent déjà pour ce centre`);
+                continue;
+            }
+
+            console.log(`📊 Types de rapports à générer: ${typesToGenerate.join(', ')}`);
+
+            for (const type of typesToGenerate) {
+                console.log(`🔄 Génération du rapport ${type} pour ${centre.nom || centre.id}...`);
+                const result = await generateMonthlyReport(type, mois, annee, centre.id);
+                results.push({ 
+                    centreId: centre.id,
+                    centreName: centre.nom || centre.id,
+                    type, 
+                    ...result 
+                });
+                
+                if (result.success) {
+                    console.log(`✅ Rapport ${type} généré avec succès`);
+                } else {
+                    console.error(`❌ Erreur génération rapport ${type}:`, result.error);
+                }
             }
         }
 

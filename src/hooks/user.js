@@ -64,6 +64,7 @@ export function useUser() {
                     displayName: userData.displayName,
                     phoneNumber: userData.phoneNumber,
                     role: userData.role,
+                    centreId: userData.centreId,
                     createdAt: userData.createdAt,
                     createdBy: userData.createdBy,
                     statut: "Actif" // Default status

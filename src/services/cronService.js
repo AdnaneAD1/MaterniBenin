@@ -16,13 +16,14 @@ class CronService {
 
   /**
    * Récupérer toutes les CPN à venir et en retard (uniquement pour grossesses en cours)
+   * @param {string} centreId - ID du centre (optionnel, si fourni, filtre par centre)
    */
-  async getUpcomingAndLateCpns() {
+  async getUpcomingAndLateCpns(centreId = null) {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      console.log('🔍 Récupération des CPN pour grossesses en cours...');
+      console.log(`🔍 Récupération des CPN pour grossesses en cours${centreId ? ` (centre: ${centreId})` : ''}...`);
       
       // 1. Récupérer UNIQUEMENT les grossesses en cours
       const grossessesQuery = query(
@@ -69,6 +70,9 @@ class CronService {
             if (consultationSnapshot.empty) continue;
             
             const consultation = consultationSnapshot.docs[0].data();
+            
+            // Si un centreId est spécifié, filtrer par centre
+            if (centreId && consultation.centreId !== centreId) continue;
             
             // Vérifier que la consultation a un RDV non vide
             if (!consultation.rdv || consultation.rdv === '') continue;
@@ -176,6 +180,7 @@ class CronService {
             rdvOriginal: consultation.rdv, // Garder l'original pour référence
             diffDays,
             userId: consultation.userId,
+            centreId: consultation.centreId, // Ajouter centreId
             grossesseId,
             patient: {
               patientId,
@@ -202,13 +207,14 @@ class CronService {
 
   /**
    * Récupérer les RDV de planification familiale à venir (uniquement futures et présentes)
+   * @param {string} centreId - ID du centre (optionnel, si fourni, filtre par centre)
    */
-  async getUpcomingPlanificationRdv() {
+  async getUpcomingPlanificationRdv(centreId = null) {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      console.log('🔍 Récupération des RDV planification familiale...');
+      console.log(`🔍 Récupération des RDV planification familiale${centreId ? ` (centre: ${centreId})` : ''}...`);
       
       // Récupérer toutes les planifications avec RDV
       const planificationsQuery = query(
@@ -287,6 +293,9 @@ class CronService {
           if (personneDoc.empty) continue;
           
           const personne = personneDoc.docs[0].data();
+          
+          // Si un centreId est spécifié, filtrer par centre
+          if (centreId && personne.centreId !== centreId) continue;
 
           // Ajouter à la liste
           rdvList.push({
@@ -297,6 +306,7 @@ class CronService {
             rdvOriginal: rdvProchain,
             diffDays,
             userId: planifData.userId,
+            centreId: personne.centreId, // Ajouter centreId
             patient: {
               patientId,
               nom: personne.nom || '',
@@ -357,17 +367,18 @@ class CronService {
 
   /**
    * Traiter les rappels de CPN et Planification Familiale
+   * @param {string} centreId - ID du centre (optionnel, si fourni, traite uniquement ce centre)
    */
-  async processCpnReminders() {
-    console.log('🔄 Traitement des rappels CPN et Planification Familiale...');
+  async processCpnReminders(centreId = null) {
+    console.log(`🔄 Traitement des rappels CPN et Planification Familiale${centreId ? ` (centre: ${centreId})` : ''}...`);
     
     try {
-      // 1. Récupérer les CPN
-      const cpnList = await this.getUpcomingAndLateCpns();
+      // 1. Récupérer les CPN (filtrées par centre si spécifié)
+      const cpnList = await this.getUpcomingAndLateCpns(centreId);
       console.log(`📋 ${cpnList.length} CPN trouvées`);
 
-      // 2. Récupérer les RDV de planification familiale
-      const planifList = await this.getUpcomingPlanificationRdv();
+      // 2. Récupérer les RDV de planification familiale (filtrés par centre si spécifié)
+      const planifList = await this.getUpcomingPlanificationRdv(centreId);
       console.log(`📋 ${planifList.length} RDV planification trouvés`);
 
       let sentCount = 0;
@@ -507,7 +518,7 @@ class CronService {
     // Job 1: Rappels CPN - Tous les jours à 8h00
     const reminderJob = cron.schedule('0 8 * * *', async () => {
       console.log('⏰ Cron: Rappels CPN (8h00)');
-      await this.processCpnReminders();
+      await this.runRemindersNow(); // Traite tous les centres
     }, {
       timezone: 'Africa/Porto-Novo' // Timezone du Bénin
     });
@@ -560,7 +571,26 @@ class CronService {
    */
   async runRemindersNow() {
     console.log('🔧 Exécution manuelle des rappels...');
-    await this.processCpnReminders();
+    
+    // Récupérer tous les centres et traiter chacun
+    try {
+      const centresSnapshot = await getDocs(collection(db, 'centres'));
+      const centres = centresSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log(`🏥 ${centres.length} centre(s) trouvé(s)`);
+
+      for (const centre of centres) {
+        console.log(`\n📍 Traitement des rappels pour le centre: ${centre.nom || centre.id}`);
+        await this.processCpnReminders(centre.id);
+      }
+    } catch (error) {
+      console.error('❌ Erreur traitement par centre:', error);
+      // Fallback: traiter sans filtrer par centre
+      await this.processCpnReminders();
+    }
   }
 
   /**

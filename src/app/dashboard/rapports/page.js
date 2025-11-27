@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useRapport } from '@/hooks/rapport';
 import GenerateRapportModal from '@/components/GenerateRapportModal';
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 
 export default function RapportsPage() {
+    const { currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [currentPage, setCurrentPage] = useState(1);
@@ -82,6 +84,11 @@ export default function RapportsPage() {
 
     const loadReports = async () => {
         try {
+            // Attendre que currentUser soit chargé
+            if (!currentUser) {
+                return;
+            }
+
             setIsLoading(true);
             const res = await getAllReports();
             if (res.success) {
@@ -95,7 +102,7 @@ export default function RapportsPage() {
     useEffect(() => {
         loadReports();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [currentUser?.uid]);
 
     const getStatusBadge = (status) => {
         const statusConfig = {

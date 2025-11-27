@@ -17,12 +17,29 @@ const DashboardLayout = ({ children, title = 'Tableau de Bord' }) => {
     // Hook pour la génération automatique des rapports mensuels
     const { notification, closeNotification } = useAutoReports();
 
-    // Vérifier l'authentification
+    // Vérifier l'authentification et rediriger selon le rôle
     useEffect(() => {
         if (!loading && !currentUser) {
             router.push('/login');
         }
     }, [currentUser, loading, router]);
+
+    // Redirection de secours basée sur le rôle
+    useEffect(() => {
+        if (currentUser && currentUser.uid) {
+            const currentPath = window.location.pathname;
+            
+            // Si l'utilisateur est admin et n'est pas sur la page admin, le rediriger
+            if (currentUser.role === 'admin' && !currentPath.includes('/admin')) {
+                router.push('/dashboard/admin');
+            }
+            
+            // Si l'utilisateur n'est pas admin et est sur la page admin, le rediriger
+            if (currentUser.role !== 'admin' && currentPath.includes('/admin')) {
+                router.push('/dashboard');
+            }
+        }
+    }, [currentUser, router]);
 
 
     // Ne pas afficher le contenu si l'utilisateur n'est pas authentifié

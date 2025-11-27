@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { usePatiente } from '@/hooks/patientes';
 import { 
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export default function CPNPage() {
+    const { currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Toutes');
     const [currentPage, setCurrentPage] = useState(1);
@@ -38,6 +40,11 @@ export default function CPNPage() {
     useEffect(() => {
         const loadData = async () => {
             try {
+                // Attendre que currentUser soit chargé
+                if (!currentUser) {
+                    return;
+                }
+
                 setIsLoading(true);
                 const [cpnResult, statsResult] = await Promise.all([
                     getCpnConsultations(),
@@ -81,7 +88,7 @@ export default function CPNPage() {
         };
         
         loadData();
-    }, []);
+    }, [currentUser?.uid]);
 
     // Generate random color for avatar
     const getRandomColor = () => {

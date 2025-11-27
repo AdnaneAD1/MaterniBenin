@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import AddPregnantWomanModal from '@/components/AddPregnantWomanModal';
 import { usePatiente } from '@/hooks/patientes';
@@ -28,6 +29,7 @@ import {
 
 export default function PatientsPage() {
     const router = useRouter();
+    const { currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
@@ -48,6 +50,11 @@ export default function PatientsPage() {
     useEffect(() => {
         const loadData = async () => {
             try {
+                // Attendre que currentUser soit chargé
+                if (!currentUser) {
+                    return;
+                }
+
                 setIsLoading(true);
                 const [patientsResult, statsResult] = await Promise.all([
                     getPatientsWithDetails(),
@@ -84,7 +91,7 @@ export default function PatientsPage() {
         };
         
         loadData();
-    }, [refreshData]); // Removed function dependencies to prevent infinite loop
+    }, [currentUser?.uid, refreshData]); // Utiliser currentUser?.uid pour éviter les dépendances des fonctions
 
     // Generate random color for avatar
     const getRandomColor = () => {

@@ -34,9 +34,20 @@ export function usePatiente() {
     const { currentUser } = useAuth();
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, "patientes"), (snapshot) => {
-            const patientes = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            setPatientes(patientes);
+        if (!currentUser?.centreId) {
+            setPatientes([]);
+            setLoading(false);
+            return;
+        }
+
+        const q = query(
+            collection(db, "personnes"),
+            where("centreId", "==", currentUser.centreId)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const personnes = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            setPatientes(personnes);
             setLoading(false);
         }, (error) => {
             setError(error);
@@ -44,7 +55,7 @@ export function usePatiente() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [currentUser?.centreId]);
 
     const addPatient = async (patient) => {
         try {
@@ -54,6 +65,7 @@ export function usePatiente() {
                 age: patient.age,
                 telephone: patient.telephone,
                 adresse: patient.adresse,
+                centreId: currentUser?.centreId || null,
                 createdAt: Timestamp.now(),
             }
             const personneRef = await addDoc(collection(db, "personnes"), personneData);
@@ -109,6 +121,7 @@ export function usePatiente() {
                 diagnostique: cpn.diagnostique ?? '',
                 rdv: cpn.rdv ?? '',
                 userId: currentUser.uid,
+                centreId: currentUser?.centreId || null,
                 createdAt: Timestamp.now(),
             });
             const allcpn = await getDocs(query(collection(db, "cpns"), where("grossesseId", "==", grossesseId)));
@@ -187,16 +200,32 @@ export function usePatiente() {
         try {
             setLoading(true);
             
-            // Get all patients
-            const patientsSnapshot = await getDocs(collection(db, "patientes"));
+            if (!currentUser?.centreId) {
+                setLoading(false);
+                return { success: false, error: new Error('Centre non défini') };
+            }
+
+            // Get all persons for this centre
+            const personnesQuery = query(
+                collection(db, "personnes"),
+                where("centreId", "==", currentUser.centreId)
+            );
+            const personnesSnapshot = await getDocs(personnesQuery);
             const patientsWithDetails = [];
             
-            for (const patientDoc of patientsSnapshot.docs) {
-                const patientData = { id: patientDoc.id, ...patientDoc.data() };
+            for (const personneDoc of personnesSnapshot.docs) {
+                const personneData = { id: personneDoc.id, ...personneDoc.data() };
                 
-                // Get person details
-                const personneDoc = await getDoc(doc(db, "personnes", patientData.personneId));
-                const personneData = personneDoc.exists() ? personneDoc.data() : {};
+                // Get patient record linked to this person
+                const patientsQuery = query(
+                    collection(db, "patientes"),
+                    where("personneId", "==", personneDoc.id)
+                );
+                const patientsSnapshot = await getDocs(patientsQuery);
+                if (patientsSnapshot.empty) continue;
+                
+                const patientDoc = patientsSnapshot.docs[0];
+                const patientData = { id: patientDoc.id, ...patientDoc.data() };
                 
                 // Get dossier
                 const dossiersQuery = query(
@@ -302,9 +331,18 @@ export function usePatiente() {
         try {
             setLoading(true);
             
-            // Get total number of patients
-            const patientsSnapshot = await getDocs(collection(db, "patientes"));
-            const totalPatients = patientsSnapshot.size;
+            if (!currentUser?.centreId) {
+                setLoading(false);
+                return { success: false, error: new Error('Centre non défini') };
+            }
+            
+            // Get total number of patients for this centre
+            const personnesQuery = query(
+                collection(db, "personnes"),
+                where("centreId", "==", currentUser.centreId)
+            );
+            const personnesSnapshot = await getDocs(personnesQuery);
+            const totalPatients = personnesSnapshot.size;
             
             // Get active pregnancies
             const activePregnanciesQuery = query(
@@ -322,7 +360,7 @@ export function usePatiente() {
             const completedPregnanciesSnapshot = await getDocs(completedPregnanciesQuery);
             const completedPregnancies = completedPregnanciesSnapshot.size;
             
-            // Get upcoming CPN appointments (RDV in the next 7 days)
+            // Get upcoming CPN appointments (RDV in the next 7 days) for this centre
             const today = new Date();
             const nextWeek = new Date();
             nextWeek.setDate(today.getDate() + 7);
@@ -333,13 +371,14 @@ export function usePatiente() {
             const upcomingRdvQuery = query(
                 collection(db, "consultations"),
                 where("type", "==", "CPN"),
+                where("centreId", "==", currentUser.centreId),
                 where("rdv", ">=", todayStr),
                 where("rdv", "<=", nextWeekStr)
             );
             const upcomingRdvSnapshot = await getDocs(upcomingRdvQuery);
             const upcomingAppointments = upcomingRdvSnapshot.size;
             
-            // Get total CPN consultations this month
+            // Get total CPN consultations this month for this centre
             const currentMonth = new Date();
             currentMonth.setDate(1);
             currentMonth.setHours(0, 0, 0, 0);
@@ -347,6 +386,7 @@ export function usePatiente() {
             const cpnThisMonthQuery = query(
                 collection(db, "consultations"),
                 where("type", "==", "CPN"),
+                where("centreId", "==", currentUser.centreId),
                 where("dateConsultation", ">=", Timestamp.fromDate(currentMonth))
             );
             const cpnThisMonthSnapshot = await getDocs(cpnThisMonthQuery);
@@ -374,10 +414,22 @@ export function usePatiente() {
     const getCpnConsultations = async () => {
         try {
             setLoading(true);
+            
+            if (!currentUser?.centreId) {
+                setLoading(false);
+                return { success: false, error: new Error('Centre non défini') };
+            }
+            
             const cpnConsultations = [];
             const today = new Date();
             
-            // 1. Get all completed CPN records from cpns collection
+            // 1. Get all completed CPN records from cpns collection (via consultations filtered by centreId)
+            const consultationsQuery = query(
+                collection(db, "consultations"),
+                where("type", "==", "CPN"),
+                where("centreId", "==", currentUser.centreId)
+            );
+            const consultationsSnapshot = await getDocs(consultationsQuery);
             const cpnsQuery = query(collection(db, "cpns"));
             const cpnsSnapshot = await getDocs(cpnsQuery);
             
