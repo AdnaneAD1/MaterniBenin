@@ -64,7 +64,7 @@ export default function DossierMaternitePage() {
 
     useEffect(() => {
         fetchData();
-    }, [id, dossierId, fetchData]);
+    }, [id, dossierId]);
 
     const handleAddPregnancy = async (pregnancyData) => {
         try {

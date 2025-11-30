@@ -232,7 +232,7 @@ export default function AccouchementPage() {
                 {/* Header Section */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Gestion des Accouchements</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">Gestion des accouchements</h1>
                         <p className="text-gray-500 mt-1">Suivez et gérez tous les accouchements</p>
                     </div>
                 </div>

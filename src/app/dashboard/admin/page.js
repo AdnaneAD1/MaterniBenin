@@ -84,7 +84,7 @@ export default function AdminPage() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Accès Refusé</h1>
-          <p className="text-gray-600 mt-2">Vous n'avez pas les permissions pour accéder à cette page</p>
+          <p className="text-gray-600 mt-2">Vous n&apos;avez pas les permissions pour accéder à cette page</p>
         </div>
       </div>
     );
@@ -104,7 +104,7 @@ export default function AdminPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Panneau Admin
+              Panneau Administrateur
             </h1>
             <p className="text-slate-600 mt-2">Gérez les centres, utilisateurs et consultez les statistiques</p>
           </div>

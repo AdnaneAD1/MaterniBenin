@@ -286,7 +286,7 @@ export default function PatientsPage() {
                 {/* Header Section */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Gestion des Patientes</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">Gestion des patientes</h1>
                         <p className="text-gray-500 mt-1">Gérez et suivez vos patientes enceintes</p>
                     </div>
                     
@@ -413,7 +413,7 @@ export default function PatientsPage() {
                                     <span className="ml-2 font-medium text-blue-600">
                                         {patient.nextVisit && patient.nextVisit !== 'Non planifié' && patient.nextVisit !== 'null' && patient.nextVisit !== null
                                             ? new Date(patient.nextVisit).toLocaleDateString('fr-FR')
-                                            : 'Aucun'
+                                            : 'Aucune'
                                         }
                                     </span>
                                 </div>

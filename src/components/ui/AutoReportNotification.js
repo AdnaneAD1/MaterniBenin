@@ -14,12 +14,15 @@ export default function AutoReportNotification({ show, reports, onClose }) {
             setIsVisible(true);
             // Auto-fermeture après 10 secondes
             const timer = setTimeout(() => {
-                handleClose();
+                setIsVisible(false);
+                setTimeout(() => {
+                    onClose();
+                }, 300);
             }, 10000);
             
             return () => clearTimeout(timer);
         }
-    }, [show]);
+    }, [show, onClose]);
 
     const handleClose = () => {
         setIsVisible(false);

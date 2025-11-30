@@ -20,6 +20,7 @@ export default function UtilisateursTab() {
   // Charger les centres
   useEffect(() => {
     loadCentres();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Charger les utilisateurs quand le centre change
@@ -27,6 +28,7 @@ export default function UtilisateursTab() {
     if (selectedCentreId) {
       loadUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCentreId]);
 
   const loadCentres = async () => {
@@ -176,7 +178,7 @@ export default function UtilisateursTab() {
         <div className="text-center py-12">
           <AlertCircle size={48} className="mx-auto text-slate-400 mb-4" />
           <p className="text-slate-600 font-medium">Aucun utilisateur pour ce centre</p>
-          <p className="text-slate-500 text-sm mt-1">Cliquez sur "Nouvel Utilisateur" pour en ajouter</p>
+          <p className="text-slate-500 text-sm mt-1">Cliquez sur &quot;Nouvel Utilisateur&quot; pour en ajouter</p>
         </div>
       )}
 

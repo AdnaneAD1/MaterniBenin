@@ -12,7 +12,7 @@ export function useRapport() {
     const { currentUser } = useAuth();
 
     // Fonction pour générer un rapport mensuel (via API route serveur)
-    const generateMonthlyReport = async (type, mois, annee) => {
+    const generateMonthlyReport = useCallback(async (type, mois, annee) => {
         try {
             setLoading(true);
             setError(null);
@@ -40,7 +40,7 @@ export function useRapport() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentUser?.centreId]);
 
     // Génération automatique des rapports de fin de mois
     const generateEndOfMonthReports = useCallback(async () => {
@@ -83,7 +83,7 @@ export function useRapport() {
             setLoading(false);
             return { success: false, error };
         }
-    }, []);
+    }, [generateMonthlyReport, currentUser?.centreId]);
 
     // Récupérer tous les rapports
     const getAllReports = async () => {

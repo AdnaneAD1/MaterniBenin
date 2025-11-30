@@ -17,6 +17,7 @@ export default function CentresTab() {
   // Charger les centres
   useEffect(() => {
     loadCentres();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCentres = async () => {
@@ -140,7 +141,7 @@ export default function CentresTab() {
         <div className="text-center py-12">
           <AlertCircle size={48} className="mx-auto text-slate-400 mb-4" />
           <p className="text-slate-600 font-medium">Aucun centre créé</p>
-          <p className="text-slate-500 text-sm mt-1">Cliquez sur "Nouveau Centre" pour en créer un</p>
+          <p className="text-slate-500 text-sm mt-1">Cliquez sur &quot;Nouveau Centre&quot; pour en créer un</p>
         </div>
       )}
 
